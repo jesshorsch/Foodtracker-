@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nährstoff Tracker</title>
+<title>Foodtracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -281,7 +281,7 @@
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="logo">Nährstoff</div>
+  <div class="logo">Foodtracker</div>
   <button class="nav-btn active" onclick="showPage('add')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     Hinzufügen
@@ -402,8 +402,16 @@
 
   <!-- PAGE: TODAY -->
   <div class="page" id="page-today">
-    <h1>Heute</h1>
+    <h1 id="greeting">Hallo, Jessica</h1>
     <p class="subtitle" id="todayDate"></p>
+
+    <div class="card card-sm" id="fodmapSummaryCard" style="margin-bottom:1rem; display:flex; align-items:flex-start; gap:12px;">
+      <div id="fodmapSummaryIcon" style="font-size:28px; line-height:1; flex-shrink:0;"></div>
+      <div>
+        <div id="fodmapSummaryTitle" style="font-weight:500; font-size:15px; margin-bottom:3px;"></div>
+        <div id="fodmapSummaryText" style="font-size:13px; color:var(--muted); line-height:1.5;"></div>
+      </div>
+    </div>
 
     <div class="card" style="margin-bottom:1rem;">
       <div class="stats-grid">
@@ -869,6 +877,46 @@ function addEntry() {
 function renderToday() {
   const entries = getTodayEntries();
   const totals = entries.reduce((a, e) => ({ kcal: a.kcal + e.kcal, prot: a.prot + e.prot, iron: a.iron + e.iron }), { kcal: 0, prot: 0, iron: 0 });
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greetWord = hour < 11 ? 'Guten Morgen' : hour < 14 ? 'Guten Mittag' : hour < 18 ? 'Guten Nachmittag' : 'Guten Abend';
+  document.getElementById('greeting').textContent = greetWord + ', Jessica';
+
+  // FODMAP daily summary
+  const card = document.getElementById('fodmapSummaryCard');
+  if (!entries.length) {
+    card.style.background = 'var(--bg)';
+    document.getElementById('fodmapSummaryIcon').textContent = '🌿';
+    document.getElementById('fodmapSummaryTitle').textContent = 'Noch nichts gegessen heute';
+    document.getElementById('fodmapSummaryText').textContent = 'Trag deine erste Mahlzeit ein, um deine Verträglichkeit zu tracken.';
+  } else {
+    const highCount = entries.filter(e => e.fodmap === 2).length;
+    const modCount  = entries.filter(e => e.fodmap === 1).length;
+    const lowCount  = entries.filter(e => e.fodmap === 0).length;
+    let icon, title, text, bg;
+    if (highCount === 0 && modCount === 0) {
+      icon = '✅'; bg = 'var(--accent-light)';
+      title = 'Super reizdarm-freundlicher Tag!';
+      text = `Alle ${lowCount} Mahlzeit${lowCount !== 1 ? 'en' : ''} waren Low FODMAP – dein Darm wird es dir danken.`;
+    } else if (highCount === 0) {
+      icon = '🟡'; bg = 'var(--warn-light)';
+      title = 'Überwiegend gut verträglich';
+      text = `${modCount} mäßig FODMAP${modCount !== 1 ? 'e Einträge' : 'r Eintrag'}, aber kein High FODMAP heute. Achte auf die Portionsgrößen.`;
+    } else if (highCount <= 2) {
+      icon = '⚠️'; bg = 'var(--warn-light)';
+      title = 'Einige High-FODMAP-Lebensmittel';
+      text = `${highCount} Eintrag${highCount !== 1 ? ' waren' : ' war'} High FODMAP. Falls du Beschwerden hast, schau in dein Log.`;
+    } else {
+      icon = '🔴'; bg = 'var(--danger-light)';
+      title = 'Viele FODMAP-reiche Mahlzeiten heute';
+      text = `${highCount} High-FODMAP-Einträge – morgen mehr Low-FODMAP-Lebensmittel einplanen.`;
+    }
+    card.style.background = bg;
+    document.getElementById('fodmapSummaryIcon').textContent = icon;
+    document.getElementById('fodmapSummaryTitle').textContent = title;
+    document.getElementById('fodmapSummaryText').textContent = text;
+  }
 
   document.getElementById('todayDate').textContent = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   document.getElementById('todayKcal').innerHTML = Math.round(totals.kcal) + '<span class="stat-unit">kcal</span>';
