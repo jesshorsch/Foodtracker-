@@ -202,12 +202,77 @@
 
   @media (max-width: 768px) {
     .app { grid-template-columns: 1fr; }
-    .sidebar { position: fixed; bottom: 0; height: auto; flex-direction: row; width: 100%; border-right: none; border-top: 1px solid var(--border); padding: 0.75rem; z-index: 50; overflow-x: auto; }
+
+    /* Bottom navigation bar */
+    .sidebar {
+      position: fixed; top: auto; bottom: 0; left: 0; right: 0;
+      height: auto; flex-direction: row;
+      width: 100%; border-right: none;
+      border-top: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+      z-index: 50; gap: 0;
+      justify-content: space-around;
+      overflow-y: visible;
+    }
     .logo { display: none; }
-    .main { padding: 1.5rem 1rem 5rem; }
-    .stats-grid { grid-template-columns: repeat(3, 1fr); }
-    .week-grid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .input-row { grid-template-columns: 1fr 80px; }
+    .nav-btn {
+      flex-direction: column; gap: 4px;
+      padding: 8px 12px; font-size: 11px;
+      width: auto; flex: 1; justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+    .nav-btn svg { width: 20px; height: 20px; }
+
+    /* Main content */
+    .main {
+      padding: 1.25rem 1rem;
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    h1 { font-size: 20px; }
+
+    /* Prevent iOS auto-zoom on input focus */
+    input, select { font-size: 16px; }
+
+    /* Stats */
+    .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-value { font-size: 20px; }
+
+    /* Week grid: scrollable row */
+    .week-grid {
+      grid-template-columns: repeat(7, minmax(42px, 1fr));
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .day-card { padding: 8px 4px; }
+    .day-kcal { font-size: 13px; }
+
+    /* Week table: horizontal scroll */
+    .week-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .week-table { min-width: 380px; }
+
+    /* Input row */
+    .input-row { grid-template-columns: 1fr 90px; }
+
+    /* Log items: stack numbers below name on very small screens */
+    .log-item { flex-wrap: wrap; gap: 6px; }
+    .log-nums { min-width: 70px; }
+
+    /* Search results full width */
+    .search-results { max-height: 220px; }
+
+    /* Larger touch targets for delete buttons */
+    .del-btn { padding: 8px; }
+
+    /* FODMAP legend wrap better */
+    .card-sm { padding: 0.875rem 1rem; }
+  }
+
+  @media (max-width: 380px) {
+    .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .stat-value { font-size: 18px; }
+    .main { padding: 1rem 0.75rem; padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+    .nav-btn { font-size: 10px; padding: 6px 8px; }
   }
 </style>
 </head>
@@ -399,18 +464,20 @@
 
     <div class="card" style="margin-top:1rem;">
       <h2>Wochenlog</h2>
-      <table class="week-table">
-        <thead>
-          <tr>
-            <th>Tag</th>
-            <th>kcal</th>
-            <th>Prot.</th>
-            <th>Eisen</th>
-            <th>FODMAP</th>
-          </tr>
-        </thead>
-        <tbody id="weekTableBody"></tbody>
-      </table>
+      <div class="week-table-wrap">
+        <table class="week-table">
+          <thead>
+            <tr>
+              <th>Tag</th>
+              <th>kcal</th>
+              <th>Prot.</th>
+              <th>Eisen</th>
+              <th>FODMAP</th>
+            </tr>
+          </thead>
+          <tbody id="weekTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
