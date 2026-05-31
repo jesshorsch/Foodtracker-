@@ -200,6 +200,12 @@
   .dot-orange { background: var(--warn); }
   .dot-blue { background: var(--blue); }
 
+  /* FODMAP SUMMARY CARD VARIANTS */
+  .fodmap-summary-neutral { background: var(--bg); }
+  .fodmap-summary-good    { background: var(--accent-light); }
+  .fodmap-summary-warn    { background: var(--warn-light); }
+  .fodmap-summary-bad     { background: var(--danger-light); }
+
   @media (max-width: 768px) {
     .app { grid-template-columns: 1fr; }
 
@@ -293,6 +299,10 @@
   <button class="nav-btn" onclick="showPage('week')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Woche
+  </button>
+  <button class="nav-btn" onclick="openSettings()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Ziele
   </button>
 </aside>
 
@@ -405,12 +415,9 @@
     <h1 id="greeting">Hallo, Jessica</h1>
     <p class="subtitle" id="todayDate"></p>
 
-    <div class="card card-sm" id="fodmapSummaryCard" style="margin-bottom:1rem; display:flex; align-items:flex-start; gap:12px;">
-      <div id="fodmapSummaryIcon" style="font-size:28px; line-height:1; flex-shrink:0;"></div>
-      <div>
-        <div id="fodmapSummaryTitle" style="font-weight:500; font-size:15px; margin-bottom:3px;"></div>
-        <div id="fodmapSummaryText" style="font-size:13px; color:var(--muted); line-height:1.5;"></div>
-      </div>
+    <div class="card card-sm fodmap-summary-neutral" id="fodmapSummaryCard" style="margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+      <span id="fodmapSummaryLabel" style="font-size:13px; color:var(--muted);"></span>
+      <span id="fodmapSummaryBadge" class="badge"></span>
     </div>
 
     <div class="card" style="margin-bottom:1rem;">
@@ -452,6 +459,22 @@
           <div class="progress-bar"><div class="progress-fill fill-blue" id="ironBar" style="width:0%"></div></div>
         </div>
       </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+        <div style="display:flex; align-items:baseline; gap:6px;">
+          <span style="font-size:22px; font-weight:300; font-family:'DM Mono',monospace; white-space:nowrap;" id="waterAmount">0 ml</span>
+          <span style="font-size:13px; color:var(--muted);" id="waterGoalText"></span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="addWater(200)">+200</button>
+          <button class="btn btn-ghost btn-sm" onclick="addWater(330)">+330</button>
+          <button class="btn btn-ghost btn-sm" onclick="addWater(500)">+500</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetWater()" title="Zurücksetzen" style="color:var(--muted);">↺</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="waterBar" style="width:0%; background:var(--blue);"></div></div>
     </div>
 
     <div id="todayLog">
@@ -506,6 +529,33 @@
   </div>
 
 </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:flex-end; justify-content:center;">
+  <div style="background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:1.5rem; width:100%; max-width:480px; padding-bottom:calc(1.5rem + env(safe-area-inset-bottom));">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+      <h2 style="margin:0;">Tagesziele</h2>
+      <button onclick="closeSettings()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);">✕</button>
+    </div>
+    <div class="field">
+      <label>Kalorien (kcal)</label>
+      <input type="number" id="setKcal" min="500" max="5000" step="50">
+    </div>
+    <div class="field">
+      <label>Protein (g)</label>
+      <input type="number" id="setProt" min="10" max="300" step="5">
+    </div>
+    <div class="field">
+      <label>Eisen (mg)</label>
+      <input type="number" id="setIron" min="1" max="50" step="0.5">
+    </div>
+    <div class="field" style="margin-bottom:1.25rem;">
+      <label>Trinkmenge (ml)</label>
+      <input type="number" id="setWater" min="500" max="5000" step="100">
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="saveSettings()">Speichern</button>
+  </div>
 </div>
 
 <script>
@@ -761,7 +811,33 @@ const FOODS = [
 ];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-const GOALS = { kcal: 2000, prot: 60, iron: 14 };
+function getGoals() {
+  try { return JSON.parse(localStorage.getItem('nl_goals') || 'null') || { kcal: 2000, prot: 60, iron: 14, water: 2000 }; }
+  catch { return { kcal: 2000, prot: 60, iron: 14, water: 2000 }; }
+}
+function saveGoals(g) { localStorage.setItem('nl_goals', JSON.stringify(g)); }
+
+function getWater() {
+  const key = getTodayKey();
+  try { return JSON.parse(localStorage.getItem('nl_water') || '{}')[key] || 0; } catch { return 0; }
+}
+function addWater(ml) {
+  const key = getTodayKey();
+  let w = {};
+  try { w = JSON.parse(localStorage.getItem('nl_water') || '{}'); } catch {}
+  w[key] = (w[key] || 0) + ml;
+  localStorage.setItem('nl_water', JSON.stringify(w));
+  renderToday();
+}
+function resetWater() {
+  const key = getTodayKey();
+  let w = {};
+  try { w = JSON.parse(localStorage.getItem('nl_water') || '{}'); } catch {}
+  w[key] = 0;
+  localStorage.setItem('nl_water', JSON.stringify(w));
+  renderToday();
+}
+
 let selectedFood = null;
 
 function getTodayKey() {
@@ -875,6 +951,7 @@ function addEntry() {
 
 // ─── TODAY ────────────────────────────────────────────────────────────────────
 function renderToday() {
+  const GOALS = getGoals();
   const entries = getTodayEntries();
   const totals = entries.reduce((a, e) => ({ kcal: a.kcal + e.kcal, prot: a.prot + e.prot, iron: a.iron + e.iron }), { kcal: 0, prot: 0, iron: 0 });
 
@@ -883,40 +960,39 @@ function renderToday() {
   const greetWord = hour < 11 ? 'Guten Morgen' : hour < 14 ? 'Guten Mittag' : hour < 18 ? 'Guten Nachmittag' : 'Guten Abend';
   document.getElementById('greeting').textContent = greetWord + ', Jessica';
 
-  // FODMAP daily summary
+  // FODMAP summary — compact, no emoji text walls
   const card = document.getElementById('fodmapSummaryCard');
   if (!entries.length) {
-    card.style.background = 'var(--bg)';
-    document.getElementById('fodmapSummaryIcon').textContent = '🌿';
-    document.getElementById('fodmapSummaryTitle').textContent = 'Noch nichts gegessen heute';
-    document.getElementById('fodmapSummaryText').textContent = 'Trag deine erste Mahlzeit ein, um deine Verträglichkeit zu tracken.';
+    card.className = 'card card-sm fodmap-summary-neutral';
+    document.getElementById('fodmapSummaryLabel').textContent = 'Noch keine Mahlzeiten';
+    document.getElementById('fodmapSummaryBadge').textContent = '';
+    document.getElementById('fodmapSummaryBadge').className = 'badge';
   } else {
     const highCount = entries.filter(e => e.fodmap === 2).length;
     const modCount  = entries.filter(e => e.fodmap === 1).length;
-    const lowCount  = entries.filter(e => e.fodmap === 0).length;
-    let icon, title, text, bg;
+    let cls, badgeCls, badgeText;
     if (highCount === 0 && modCount === 0) {
-      icon = '✅'; bg = 'var(--accent-light)';
-      title = 'Super reizdarm-freundlicher Tag!';
-      text = `Alle ${lowCount} Mahlzeit${lowCount !== 1 ? 'en' : ''} waren Low FODMAP – dein Darm wird es dir danken.`;
+      cls = 'fodmap-summary-good'; badgeCls = 'badge badge-green'; badgeText = 'Low FODMAP';
     } else if (highCount === 0) {
-      icon = '🟡'; bg = 'var(--warn-light)';
-      title = 'Überwiegend gut verträglich';
-      text = `${modCount} mäßig FODMAP${modCount !== 1 ? 'e Einträge' : 'r Eintrag'}, aber kein High FODMAP heute. Achte auf die Portionsgrößen.`;
+      cls = 'fodmap-summary-warn'; badgeCls = 'badge badge-orange'; badgeText = 'Moderat FODMAP';
     } else if (highCount <= 2) {
-      icon = '⚠️'; bg = 'var(--warn-light)';
-      title = 'Einige High-FODMAP-Lebensmittel';
-      text = `${highCount} Eintrag${highCount !== 1 ? ' waren' : ' war'} High FODMAP. Falls du Beschwerden hast, schau in dein Log.`;
+      cls = 'fodmap-summary-warn'; badgeCls = 'badge badge-red'; badgeText = `${highCount}× High FODMAP`;
     } else {
-      icon = '🔴'; bg = 'var(--danger-light)';
-      title = 'Viele FODMAP-reiche Mahlzeiten heute';
-      text = `${highCount} High-FODMAP-Einträge – morgen mehr Low-FODMAP-Lebensmittel einplanen.`;
+      cls = 'fodmap-summary-bad'; badgeCls = 'badge badge-red'; badgeText = `${highCount}× High FODMAP`;
     }
-    card.style.background = bg;
-    document.getElementById('fodmapSummaryIcon').textContent = icon;
-    document.getElementById('fodmapSummaryTitle').textContent = title;
-    document.getElementById('fodmapSummaryText').textContent = text;
+    card.className = 'card card-sm fodmap-summary-' + cls.replace('fodmap-summary-','');
+    document.getElementById('fodmapSummaryLabel').textContent = 'Heutige Verträglichkeit';
+    document.getElementById('fodmapSummaryBadge').textContent = badgeText;
+    document.getElementById('fodmapSummaryBadge').className = badgeCls;
   }
+
+  // Water tracker
+  const water = getWater();
+  const waterGoal = GOALS.water;
+  const waterPct = Math.min(100, water / waterGoal * 100);
+  document.getElementById('waterAmount').textContent = water >= 1000 ? (water / 1000).toFixed(1) + ' L' : water + ' ml';
+  document.getElementById('waterGoalText').textContent = '/ ' + (waterGoal >= 1000 ? (waterGoal/1000).toFixed(1) + ' L' : waterGoal + ' ml');
+  document.getElementById('waterBar').style.width = waterPct + '%';
 
   document.getElementById('todayDate').textContent = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   document.getElementById('todayKcal').innerHTML = Math.round(totals.kcal) + '<span class="stat-unit">kcal</span>';
@@ -1012,6 +1088,30 @@ function renderWeek() {
     document.getElementById('avgProt').innerHTML = Math.round(totalProt / activeDays * 10) / 10 + '<span class="stat-unit">g</span>';
     document.getElementById('avgIron').innerHTML = Math.round(totalIron / activeDays * 10) / 10 + '<span class="stat-unit">mg</span>';
   }
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function openSettings() {
+  const g = getGoals();
+  document.getElementById('setKcal').value = g.kcal;
+  document.getElementById('setProt').value = g.prot;
+  document.getElementById('setIron').value = g.iron;
+  document.getElementById('setWater').value = g.water;
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+function saveSettings() {
+  saveGoals({
+    kcal:  parseInt(document.getElementById('setKcal').value)  || 2000,
+    prot:  parseInt(document.getElementById('setProt').value)  || 60,
+    iron:  parseFloat(document.getElementById('setIron').value) || 14,
+    water: parseInt(document.getElementById('setWater').value) || 2000,
+  });
+  closeSettings();
+  renderToday();
+  renderWeek();
 }
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
