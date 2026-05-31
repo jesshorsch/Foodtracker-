@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nährstoff Tracker</title>
+<title>Foodtracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -106,7 +106,12 @@
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="logo">Nährstoff</div>
+  <div class="logo">Foodtracker</div>
+  <div style="padding:0 12px 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1rem;">
+    <div style="font-size:13px;color:var(--muted);" id="greeting"></div>
+    <div style="font-size:16px;font-weight:500;">Jessica</div>
+  </div>
+  <script>const h=new Date().getHours();document.getElementById('greeting').textContent=h<12?'Guten Morgen,':h<14?'Guten Mittag,':h<18?'Guten Nachmittag,':'Guten Abend,';</script>
   <button class="nav-btn active" onclick="showPage('add')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Hinzufügen
   </button>
