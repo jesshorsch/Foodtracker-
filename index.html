@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nährstoff Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f7f6f3;--surface:#fff;--border:rgba(0,0,0,.08);--border-strong:rgba(0,0,0,.15);
+    --text:#1a1a1a;--muted:#888;--accent:#2d6a4f;--accent-light:#d8f3dc;
+    --warn:#e07b39;--warn-light:#fff3e0;--danger:#c0392b;--danger-light:#fdecea;
+    --blue:#2c5f8a;--blue-light:#e3f0fb;--radius:14px;--radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;min-height:100vh;}
+  .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:2rem 1.5rem;display:flex;flex-direction:column;gap:.25rem;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .logo{font-size:13px;font-weight:500;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:2rem;}
+  .nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;font-family:inherit;width:100%;text-align:left;transition:all .15s;}
+  .nav-btn:hover{background:var(--bg);color:var(--text);}
+  .nav-btn.active{background:var(--accent-light);color:var(--accent);font-weight:500;}
+  .nav-btn svg{width:16px;height:16px;flex-shrink:0;}
+  .main{padding:2.5rem;overflow-y:auto;}
+  .page{display:none;}.page.active{display:block;}
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:1.5rem;margin-bottom:1rem;}
+  .card-sm{padding:1rem 1.25rem;}
+  h1{font-size:22px;font-weight:500;margin-bottom:.25rem;}
+  h2{font-size:17px;font-weight:500;margin-bottom:1rem;}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:1.5rem;}
+  .field{margin-bottom:1rem;}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;}
+  input,select{width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s;}
+  input:focus,select:focus{border-color:var(--accent);}
+  .input-row{display:grid;grid-template-columns:1fr 100px;gap:10px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;}
+  .btn-primary{background:var(--text);color:white;}.btn-primary:hover{opacity:.85;}
+  .btn-ghost{background:none;border:1px solid var(--border-strong);color:var(--muted);}.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:500;}
+  .badge-green{background:var(--accent-light);color:var(--accent);}
+  .badge-red{background:var(--danger-light);color:var(--danger);}
+  .badge-orange{background:var(--warn-light);color:var(--warn);}
+  .badge-blue{background:var(--blue-light);color:var(--blue);}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem;}
+  .stat-card{background:var(--bg);border-radius:var(--radius-sm);padding:1rem;}
+  .stat-label{font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .stat-value{font-size:24px;font-weight:300;font-family:'DM Mono',monospace;}
+  .stat-unit{font-size:13px;color:var(--muted);margin-left:2px;}
+  .progress-wrap{margin-bottom:.75rem;}
+  .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:13px;}
+  .progress-bar{height:5px;background:var(--bg);border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+  .fill-green{background:var(--accent);}.fill-orange{background:var(--warn);}.fill-blue{background:var(--blue);}
+  .log-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+  .log-item:last-child{border-bottom:none;}
+  .log-name{font-size:14px;font-weight:500;}
+  .log-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .log-nums{text-align:right;font-size:13px;font-family:'DM Mono',monospace;}
+  .log-nums span{display:block;}.log-nums .kcal{font-weight:500;font-size:15px;}
+  .del-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;margin-left:8px;opacity:.5;transition:opacity .15s;}
+  .del-btn:hover{opacity:1;color:var(--danger);}
+  .meal-section{margin-bottom:1.5rem;}
+  .meal-header{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.5rem;}
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:1.5rem;}
+  .day-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s;}
+  .day-card:hover{border-color:var(--border-strong);}
+  .day-card.today{border-color:var(--accent);background:var(--accent-light);}
+  .day-name{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .day-kcal{font-size:16px;font-weight:500;font-family:'DM Mono',monospace;}
+  .day-bar{height:3px;background:var(--border);border-radius:99px;margin-top:6px;overflow:hidden;}
+  .day-bar-fill{height:100%;background:var(--accent);border-radius:99px;}
+  .search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);z-index:100;max-height:300px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.08);}
+  .result-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+  .result-item:last-child{border-bottom:none;}.result-item:hover{background:var(--bg);}
+  .result-name{font-size:14px;font-weight:500;}
+  .result-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .search-wrap{position:relative;}
+  /* FODMAP DETAIL PANEL */
+  .fodmap-panel{margin-top:1rem;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+  .fodmap-header{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:500;}
+  .fodmap-header-ok{background:var(--accent-light);color:var(--accent);}
+  .fodmap-header-warn{background:var(--warn-light);color:var(--warn);}
+  .fodmap-header-bad{background:var(--danger-light);color:var(--danger);}
+  .fodmap-body{padding:12px 14px;background:var(--surface);font-size:13px;}
+  .fodmap-substances{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .substance-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;background:var(--bg);border:1px solid var(--border-strong);}
+  .fodmap-why{font-size:13px;color:var(--muted);line-height:1.6;}
+  .fodmap-tip{margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:var(--radius-sm);font-size:12px;color:var(--muted);border-left:3px solid var(--border-strong);}
+  .fodmap-tip-ok{border-left-color:var(--accent);}
+  .fodmap-tip-warn{border-left-color:var(--warn);}
+  .fodmap-tip-bad{border-left-color:var(--danger);}
+  .week-table{width:100%;font-size:13px;border-collapse:collapse;}
+  .week-table th{text-align:left;font-weight:500;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:0 0 8px;}
+  .week-table td{padding:10px 0;border-top:1px solid var(--border);vertical-align:middle;}
+  .week-table td:not(:first-child){font-family:'DM Mono',monospace;}
+  .empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;}
+  @media(max-width:768px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:fixed;bottom:0;height:auto;flex-direction:row;width:100%;border-right:none;border-top:1px solid var(--border);padding:.75rem;z-index:50;overflow-x:auto;}
+    .logo{display:none;}
+    .main{padding:1.5rem 1rem 5rem;}
+    .week-grid{gap:4px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">Nährstoff</div>
+  <button class="nav-btn active" onclick="showPage('add')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Hinzufügen
+  </button>
+  <button class="nav-btn" onclick="showPage('today')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Heute
+  </button>
+  <button class="nav-btn" onclick="showPage('week')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Woche
+  </button>
+  <button class="nav-btn" onclick="showPage('settings')" style="margin-top:auto;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Einstellungen
+  </button>
+</aside>
+<main class="main">
+
+<!-- PAGE: ADD -->
+<div class="page active" id="page-add">
+  <h1>Mahlzeit hinzufügen</h1>
+  <p class="subtitle">Suche unter 500+ Lebensmitteln</p>
+  <div class="card">
+    <div class="field">
+      <label>Mahlzeit</label>
+      <select id="mealType">
+        <option value="Frühstück">Frühstück</option>
+        <option value="Mittagessen">Mittagessen</option>
+        <option value="Abendessen">Abendessen</option>
+        <option value="Snack">Snack</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Lebensmittel</label>
+      <div class="search-wrap">
+        <input type="text" id="foodSearch" placeholder="z.B. Hähnchen, Brokkoli, Haferflocken…" oninput="onSearch(this.value)" autocomplete="off">
+        <div class="search-results" id="searchResults" style="display:none;"></div>
+      </div>
+    </div>
+    <div id="selectedFoodArea" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+        <strong id="selectedFoodName" style="font-size:15px;"></strong>
+        <span id="fodmapBadge"></span>
+      </div>
+      <div class="input-row field">
+        <div><label>Menge</label><input type="number" id="amount" value="100" min="1" oninput="updatePreview()"></div>
+        <div><label>Einheit</label><select id="unit" onchange="updatePreview()"><option value="g">g</option><option value="ml">ml</option><option value="Stk">Stk</option></select></div>
+      </div>
+      <div class="stats-grid" style="margin-bottom:1rem;">
+        <div class="stat-card"><div class="stat-label">Kalorien</div><div class="stat-value" id="prevKcal">0<span class="stat-unit">kcal</span></div></div>
+        <div class="stat-card"><div class="stat-label">Protein</div><div class="stat-value" id="prevProt">0<span class="stat-unit">g</span></div></div>
+        <div class="stat-card"><div class="stat-label">Eisen</div><div class="stat-value" id="prevIron">0<span class="stat-unit">mg</span></div></div>
+      </div>
+      <div id="fodmapPanel" style="display:none;"></div>
+      <div style="display:flex;gap:8px;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="addEntry()">Eintragen</button>
+        <button class="btn btn-ghost" onclick="clearSelection()">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: TODAY -->
+<div class="page" id="page-today">
+  <h1>Heute</h1>
+  <p class="subtitle" id="todayDate"></p>
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Kalorien</div><div class="stat-value" id="todayKcal">0<span class="stat-unit">kcal</span></div></div>
+      <div class="stat-card"><div class="stat-label">Protein</div><div class="stat-value" id="todayProt">0<span class="stat-unit">g</span></div></div>
+      <div class="stat-card"><div class="stat-label">Eisen</div><div class="stat-value" id="todayIron">0<span class="stat-unit">mg</span></div></div>
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="progress-wrap">
+        <div class="progress-header"><span>Kalorien</span><span id="kcalGoalText" style="color:var(--muted);font-size:12px;"></span></div>
+        <div class="progress-bar"><div class="progress-fill fill-green" id="kcalBar" style="width:0%"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-header"><span>Protein</span><span id="protGoalText" style="color:var(--muted);font-size:12px;"></span></div>
+        <div class="progress-bar"><div class="progress-fill fill-orange" id="protBar" style="width:0%"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-header"><span>Eisen</span><span id="ironGoalText" style="color:var(--muted);font-size:12px;"></span></div>
+        <div class="progress-bar"><div class="progress-fill fill-blue" id="ironBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+  <div id="todayLog"><div class="empty">Noch keine Einträge heute.</div></div>
+</div>
+
+<!-- PAGE: WEEK -->
+<div class="page" id="page-week">
+  <h1>Wochenübersicht</h1>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+    <button class="btn btn-ghost" style="padding:8px 12px;" onclick="changeWeek(-1)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span id="weekRange" style="font-size:13px;color:var(--muted);flex:1;text-align:center;"></span>
+    <button class="btn btn-ghost" style="padding:8px 12px;" onclick="changeWeek(1)" id="weekNextBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px;" onclick="weekOffset=0;renderWeek()" id="weekTodayBtn">Heute</button>
+  </div>
+  <div class="card" style="margin-bottom:1rem;"><div class="week-grid" id="weekGrid"></div></div>
+  <div class="card">
+    <h2>Tagesdurchschnitt</h2>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Ø Kalorien</div><div class="stat-value" id="avgKcal">–</div></div>
+      <div class="stat-card"><div class="stat-label">Ø Protein</div><div class="stat-value" id="avgProt">–</div></div>
+      <div class="stat-card"><div class="stat-label">Ø Eisen</div><div class="stat-value" id="avgIron">–</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <h2>Wochenlog</h2>
+    <table class="week-table">
+      <thead><tr><th>Tag</th><th>kcal</th><th>Prot.</th><th>Eisen</th><th>FODMAP</th></tr></thead>
+      <tbody id="weekTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="page-settings">
+  <h1>Einstellungen</h1>
+  <p class="subtitle">Tägliche Zielwerte anpassen</p>
+
+  <div class="card">
+    <h2>Nährstoffziele</h2>
+    <div class="field">
+      <label>Kalorien (kcal / Tag)</label>
+      <input type="number" id="set-kcal" min="500" max="6000" step="50">
+    </div>
+    <div class="field">
+      <label>Protein (g / Tag)</label>
+      <input type="number" id="set-prot" min="10" max="300" step="5">
+    </div>
+    <div class="field">
+      <label>Eisen (mg / Tag)</label>
+      <input type="number" id="set-iron" min="1" max="50" step="1">
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">Speichern</button>
+    <span id="settings-saved" style="display:none;font-size:13px;color:var(--accent);margin-left:12px;">✓ Gespeichert</span>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <h2>Referenzwerte</h2>
+    <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span>Frauen (19–50 J.)</span><span>~1800–2100 kcal · 46g Prot · <strong style="color:var(--danger);">15mg Fe</strong></span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span>Männer (19–50 J.)</span><span>~2100–2500 kcal · 56g Prot · 10mg Fe</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span>Schwangerschaft</span><span>~2200–2500 kcal · 58g Prot · <strong style="color:var(--danger);">30mg Fe</strong></span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Sport (intensiv)</span><span>~1,6–2,2g Prot / kg Körpergewicht</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <h2>Daten</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="exportData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export (JSON)
+      </button>
+      <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="clearAllData()">Alle Daten löschen</button>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+<script>
+// ─── FOOD DATABASE ────────────────────────────────────────────────────────────
+// fodmap: 0=low, 1=moderat, 2=high
+// substances: welche FODMAP-Verbindungen enthalten sind
+// why: warum es Reizdarm-Trigger sein kann
+// tip: Empfehlung / Toleranzschwelle
+const FOODS = [
+// ── FLEISCH & GEFLÜGEL ──
+{name:"Hähnchenbrust (gekocht)",kcal:165,prot:31,iron:1.0,fodmap:0,substances:[],why:"Reines Muskelfleisch ohne Kohlenhydrate – enthält keinerlei vergärbare Zucker oder Ballaststoffe.",tip:"Unbegrenzt geeignet. Ideal als Proteinbasis bei Reizdarm."},
+{name:"Hähnchenschenkel (ohne Haut)",kcal:174,prot:24,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Etwas fettreicher als Brust, aber gleich gut verträglich.",tip:"Unbegrenzt geeignet."},
+{name:"Rindfleisch (mager)",kcal:250,prot:26,iron:2.8,fodmap:0,substances:[],why:"Fleisch enthält keine Kohlenhydrate und damit keine FODMAPs. Sehr eisenreich.",tip:"Unbegrenzt verträglich. Auf Marinaden ohne Knoblauch/Zwiebel achten."},
+{name:"Rinderhackfleisch (mager)",kcal:215,prot:22,iron:2.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Eisenreich und vielseitig.",tip:"Auf Fertigwürzmischungen verzichten – oft enthalten sie Zwiebel-/Knoblauchpulver."},
+{name:"Schweinefilet",kcal:143,prot:22,iron:1.1,fodmap:0,substances:[],why:"Sehr mageres Fleisch ohne Kohlenhydrate.",tip:"Unbegrenzt geeignet."},
+{name:"Schweineschnitzel",kcal:143,prot:22,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Panierung mit Weizenmehl vermeiden – glutenfreie Variante verwenden."},
+{name:"Schweinekotelett",kcal:172,prot:21,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Lammkeule",kcal:258,prot:25,iron:2.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Gute Eisenquelle.",tip:"Unbegrenzt geeignet."},
+{name:"Lammhackfleisch",kcal:282,prot:17,iron:1.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Fertigwürzmischungen prüfen."},
+{name:"Truthahn / Pute (Brust)",kcal:135,prot:29,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr proteinreich.",tip:"Unbegrenzt geeignet."},
+{name:"Ente (ohne Haut)",kcal:201,prot:23,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Eisenreicher als Hühnchen.",tip:"Unbegrenzt geeignet."},
+{name:"Kalbfleisch",kcal:172,prot:21,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Mild und gut verträglich.",tip:"Unbegrenzt geeignet."},
+{name:"Rehrücken",kcal:112,prot:23,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreiches Magerfleisch.",tip:"Unbegrenzt geeignet."},
+{name:"Wildschwein",kcal:122,prot:22,iron:3.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Mageres Wildfleisch.",tip:"Unbegrenzt geeignet."},
+{name:"Schinken (gekocht)",kcal:145,prot:20,iron:0.9,fodmap:0,substances:[],why:"Pures Fleisch ohne FODMAP.",tip:"Auf Zusätze achten: viele Fertigschinken enthalten Dextrose, Lactose oder Zwiebelpulver."},
+{name:"Speck / Bacon",kcal:541,prot:37,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Fertigprodukte prüfen. Pur gebraten unbedenklich."},
+{name:"Salami",kcal:425,prot:22,iron:2.2,fodmap:0,substances:[],why:"Getrocknetes Fleisch enthält keine FODMAPs.",tip:"Auf Knoblauch in der Zutatenliste achten – kann FODMAP-Belastung erhöhen."},
+{name:"Leberwurst",kcal:326,prot:13,iron:8.8,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Gehalt. Sehr eisenreich.",tip:"Kleine Portionen wegen Fettgehalt."},
+{name:"Chorizo",kcal:455,prot:25,iron:1.5,fodmap:1,substances:["Knoblauch (Fructane)"],why:"Enthält Knoblauch als Zutat. Fructane aus Knoblauch sind selbst in kleinen Mengen FODMAP-wirksam.",tip:"Kleine Mengen (≤20g) oft noch verträglich. Auf Knoblauchanteil in Zutatenliste achten."},
+// ── FISCH & MEERESFRÜCHTE ──
+{name:"Lachs (frisch)",kcal:208,prot:20,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Omega-3-reich.",tip:"Unbegrenzt geeignet."},
+{name:"Lachs (geräuchert)",kcal:177,prot:25,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Auf Gewürzzusätze achten."},
+{name:"Thunfisch (Dose, in Wasser)",kcal:116,prot:26,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Proteinreich.",tip:"Unbegrenzt geeignet."},
+{name:"Thunfisch (frisch)",kcal:144,prot:30,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kabeljau / Dorsch",kcal:82,prot:18,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr fettarm.",tip:"Unbegrenzt geeignet."},
+{name:"Forelle (gekocht)",kcal:151,prot:23,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Hering (frisch)",kcal:203,prot:18,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Omega-3-reich.",tip:"Marinierter Hering enthält oft Zwiebeln – auf Zutaten achten."},
+{name:"Makrele (geräuchert)",kcal:305,prot:19,iron:1.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Sardinen (Dose, in Öl)",kcal:208,prot:25,iron:2.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Ausgezeichnete Eisenquelle.",tip:"Unbegrenzt geeignet."},
+{name:"Sardellen (Anchovis)",kcal:210,prot:29,iron:3.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Unbegrenzt geeignet."},
+{name:"Garnelen (gekocht)",kcal:99,prot:21,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr proteinreich.",tip:"Unbegrenzt geeignet."},
+{name:"Muscheln (Miesmuscheln)",kcal:86,prot:12,iron:4.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Unbegrenzt geeignet."},
+{name:"Tintenfisch (Calamari)",kcal:92,prot:16,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gebratene Variante ohne Panade bevorzugen."},
+{name:"Austern",kcal:69,prot:8,iron:5.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Unbegrenzt geeignet."},
+{name:"Krabben (Nordseekrabbe)",kcal:89,prot:17,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Auf Würzsaucen mit Knoblauch verzichten."},
+{name:"Zander (gekocht)",kcal:96,prot:20,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Barsch (Seebarsch)",kcal:97,prot:18,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+// ── EIER ──
+{name:"Eier (Hühnerei, gekocht)",kcal:155,prot:13,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Vollständiges Protein, gute Eisenquelle.",tip:"Unbegrenzt geeignet."},
+{name:"Eier (Spiegelei)",kcal:196,prot:14,iron:1.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Wachtelei",kcal:158,prot:13,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Unbegrenzt geeignet."},
+// ── GETREIDE & KOHLENHYDRATE ──
+{name:"Weißer Reis (gekocht)",kcal:130,prot:2.7,iron:0.2,fodmap:0,substances:[],why:"Reis enthält keine vergärbaren Kohlenhydrate – ideale Kohlenhydratquelle bei Reizdarm.",tip:"Unbegrenzt geeignet. Besonders bei akuten Beschwerden empfohlen."},
+{name:"Basmati-Reis (weiß, gekocht)",kcal:130,prot:2.7,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Besonders reizdarm-freundlich.",tip:"Unbegrenzt geeignet."},
+{name:"Brauner Reis (gekocht)",kcal:112,prot:2.3,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Ballaststoffreicher als weißer Reis.",tip:"Unbegrenzt geeignet. Bei sehr empfindlichem Darm ggf. weißen Reis bevorzugen."},
+{name:"Wildreis (gekocht)",kcal:101,prot:4.0,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Reisnudeln (gekocht)",kcal:108,prot:2.1,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Perfekte Nudelalternative.",tip:"Unbegrenzt geeignet."},
+{name:"Reisbrot",kcal:265,prot:4.5,iron:0.3,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Auf Zutaten achten – manche enthalten Weizen oder Hefe."},
+{name:"Reiswaffeln",kcal:381,prot:8.2,iron:1.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet als Snack."},
+{name:"Reismehl",kcal:366,prot:5.9,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Beste glutenfreie Backalternative."},
+{name:"Maisnudeln (glutenfrei, gekocht)",kcal:142,prot:3.2,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Reizdarm-freundliche Nudelalternative.",tip:"Unbegrenzt geeignet."},
+{name:"Mais-Tortilla",kcal:218,prot:5.7,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Weizentortillas meiden."},
+{name:"Polenta / Maisgrieß",kcal:362,prot:8.1,iron:3.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Cornflakes (ungesüßt)",kcal:357,prot:7.5,iron:3.5,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil in normalen Mengen.",tip:"Auf Malzextrakt in der Zutatenliste achten (enthält Fructane)."},
+{name:"Buchweizen (gekocht)",kcal:92,prot:3.4,iron:0.8,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Hirse (gekocht)",kcal:119,prot:3.5,iron:0.6,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Quinoa (gekocht)",kcal:120,prot:4.4,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Vollständiges Protein.",tip:"Unbegrenzt geeignet."},
+{name:"Amaranth (gekocht)",kcal:102,prot:3.8,iron:2.1,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Glutenfreies Brot",kcal:265,prot:4.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil – je nach Zutaten.",tip:"Zutatenliste prüfen: Apfelessig, Inulin oder Sojamehl können versteckte FODMAPs einbringen."},
+{name:"Tapiokamehl",kcal:358,prot:0.2,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut als Bindemittel beim glutenfreien Backen."},
+{name:"Kartoffelstärke",kcal:357,prot:0.1,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut als Bindemittel."},
+{name:"Haferflocken",kcal:389,prot:17,iron:4.7,fodmap:1,substances:["Fructane (GOS)"],why:"Hafer enthält Galacto-Oligosaccharide (GOS), die von Darmbakterien vergoren werden und Blähungen sowie Bauchschmerzen verursachen können.",tip:"Bis 52g (ca. 4 EL) täglich meist noch verträglich. Zertifizierte glutenfreie Haferflocken bevorzugen."},
+{name:"Müsli (ohne Trockenfrüchte)",kcal:368,prot:10,iron:3.8,fodmap:1,substances:["Fructane (Hafer)","GOS"],why:"Je nach Zusammensetzung moderate FODMAP-Belastung durch Hafer und ggf. andere Zutaten.",tip:"Selbst zusammenstellen: Reisflocken + erlaubte Nüsse + Samen = sicherere Alternative."},
+{name:"Vollkornbrot",kcal:247,prot:9,iron:2.5,fodmap:2,substances:["Fructane (Weizen)","GOS"],why:"Enthält hohe Mengen Fructane aus Weizen. Ballaststoffe aus Weizenkleie verschlimmern Symptome zusätzlich.",tip:"Durch glutenfreies Brot oder Sauerteigbrot (lange Gärung) ersetzen."},
+{name:"Roggenbrot",kcal:259,prot:8.5,iron:2.6,fodmap:2,substances:["Fructane (Roggen)"],why:"Roggen hat einen der höchsten Fructan-Gehalte unter Getreidesorten. Häufig unterschätzter Auslöser.",tip:"Auch in kleinen Mengen problematisch. Konsequent meiden."},
+{name:"Pumpernickel",kcal:210,prot:7.3,iron:2.9,fodmap:2,substances:["Fructane (Roggen)"],why:"Lange Backzeit reduziert FODMAPs kaum. Roggenfructane bleiben aktiv.",tip:"Meiden."},
+{name:"Weizenbrot (Weißbrot)",kcal:265,prot:9,iron:1.9,fodmap:2,substances:["Fructane (Weizen)"],why:"Auch Weißbrot aus Weizen enthält erhebliche Fructanmengen, die den Darm reizen.",tip:"Durch Dinkel-Sauerteig (lange Gärung) oder glutenfreies Brot ersetzen."},
+{name:"Dinkelmehl",kcal:337,prot:12,iron:4.1,fodmap:2,substances:["Fructane (Dinkel)"],why:"Dinkel enthält ähnlich viele Fructane wie Weizen. Der Mythos der besseren Verträglichkeit ist durch FODMAP-Forschung widerlegt.",tip:"Meiden. Reismehl oder Buchweizenmehl als Alternative."},
+{name:"Weizenmehl (Typ 405)",kcal:348,prot:10,iron:0.9,fodmap:2,substances:["Fructane (Weizen)"],why:"Hohe Fructan-Konzentration. Einer der häufigsten Reizdarm-Auslöser in der westlichen Ernährung.",tip:"Konsequent durch glutenfreie Mehle ersetzen."},
+{name:"Knäckebrot (Roggen)",kcal:321,prot:8.5,iron:2.5,fodmap:2,substances:["Fructane (Roggen)"],why:"Rösten reduziert Fructane nicht. Roggenfructane bleiben vollständig erhalten.",tip:"Reiswaffeln oder Maiswaffeln als Alternative."},
+{name:"Knäckebrot (Mais)",kcal:359,prot:7.5,iron:1.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute Brot-Alternative."},
+{name:"Sauerteigbrot (Weizen, lange Gärung)",kcal:239,prot:9,iron:2.1,fodmap:1,substances:["Fructane (reduziert)"],why:"Lange Fermentation (>8h) baut einen erheblichen Teil der Fructane ab, aber nicht vollständig.",tip:"Kleine Portionen (1–2 Scheiben) oft verträglich. Industriesauerteig enthält mehr FODMAPs."},
+// ── KARTOFFELN & WURZELGEMÜSE ──
+{name:"Kartoffeln (gekocht)",kcal:87,prot:1.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr reizdarm-freundlich.",tip:"Unbegrenzt geeignet."},
+{name:"Kartoffeln (gebacken)",kcal:93,prot:2.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kartoffelpüree (ohne Milch)",kcal:83,prot:2.0,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Mit laktosefreier Milch oder Butter zubereiten."},
+{name:"Pommes Frites (selbst gemacht)",kcal:312,prot:3.5,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Fertig-Pommes können Zwiebelpulver enthalten."},
+{name:"Süßkartoffel (gekocht)",kcal:86,prot:1.6,iron:0.7,fodmap:1,substances:["Mannitol"],why:"Süßkartoffeln enthalten Mannitol – ein Zuckeralkohol, der schlecht absorbiert wird und Wasser in den Darm zieht. Kann Durchfall und Blähungen verursachen.",tip:"Bis ½ Tasse (ca. 70g) meist noch verträglich."},
+{name:"Karotten (roh)",kcal:41,prot:0.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Karotten (gekocht)",kcal:35,prot:0.8,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Pastinake",kcal:75,prot:1.8,iron:0.6,fodmap:1,substances:["Fructane","GOS"],why:"Enthält moderate Fructane und GOS. Kann bei empfindlichem Darm Blähungen verursachen.",tip:"Bis ½ Tasse (ca. 75g) meist verträglich."},
+{name:"Steckrübe (Kohlrübe, gekocht)",kcal:36,prot:1.1,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Rote Beete (gekocht)",kcal:44,prot:1.7,iron:0.8,fodmap:1,substances:["Fructane","GOS"],why:"Enthält moderate Mengen Fructane und GOS, die bei größeren Portionen fermentiert werden.",tip:"Bis 2 Scheiben (ca. 40g) low FODMAP."},
+// ── GEMÜSE ──
+{name:"Spinat (frisch)",kcal:23,prot:2.9,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 75g.",tip:"Ausgezeichnete Eisenquelle. Ab >75g leichte FODMAP-Belastung durch GOS."},
+{name:"Brokkoli",kcal:34,prot:2.8,iron:0.7,fodmap:1,substances:["GOS (Sorbit-ähnlich)","Fructane"],why:"Enthält GOS und moderate Fructanmengen. Bekannt als Blähungsauslöser durch bakterielle Fermentation im Dickdarm.",tip:"Bis 75g (ca. ¾ Tasse) low FODMAP. Gut durchgaren reduziert Beschwerden."},
+{name:"Blumenkohl",kcal:25,prot:1.9,iron:0.4,fodmap:2,substances:["Mannitol"],why:"Sehr hoher Mannitol-Gehalt – Zuckeralkohol, der kaum absorbiert wird. Zieht Wasser in den Darm und verursacht Durchfall, Blähungen.",tip:"Konsequent meiden oder auf weniger als 2 EL reduzieren."},
+{name:"Zucchini",kcal:17,prot:1.2,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Paprika (rot)",kcal:31,prot:1.0,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Paprika (gelb)",kcal:27,prot:1.0,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Paprika (grün)",kcal:20,prot:0.9,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Tomate (frisch)",kcal:18,prot:0.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Tomaten (Dose, gehackt)",kcal:24,prot:1.2,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Gurke",kcal:15,prot:0.7,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Aubergine",kcal:25,prot:1.0,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kohlrabi",kcal:27,prot:1.7,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kürbis (Hokkaido)",kcal:40,prot:1.4,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 1 Tasse.",tip:"Unbegrenzt geeignet."},
+{name:"Kürbis (Butternut)",kcal:45,prot:1.0,iron:0.7,fodmap:1,substances:["Mannitol"],why:"Butternut-Kürbis enthält Mannitol. Geringe Mengen oft verträglich.",tip:"Bis ¼ Tasse (ca. 45g) low FODMAP."},
+{name:"Mais (Dose, abgetropft)",kcal:86,prot:2.7,iron:0.5,fodmap:0,substances:[],why:"Dosenmais hat durch Verarbeitung niedrigere FODMAP-Werte als frischer Mais.",tip:"Bis ½ Tasse verträglich."},
+{name:"Mais (frisch)",kcal:96,prot:3.4,iron:0.5,fodmap:1,substances:["Fructane (moderat)"],why:"Frischer Mais enthält moderate Fructanmengen.",tip:"Bis ½ Kolben meist verträglich."},
+{name:"Pak Choi",kcal:13,prot:1.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Wirsing",kcal:28,prot:2.0,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis ¾ Tasse.",tip:"Blähend durch Schwefelverbindungen, aber kein FODMAP."},
+{name:"Weißkohl",kcal:25,prot:1.3,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis ¾ Tasse. Kann durch Schwefelverbindungen dennoch blähend wirken.",tip:"Gut garen, langsam essen."},
+{name:"Rotkohl",kcal:31,prot:1.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Grünkohl",kcal:49,prot:4.3,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Sehr nährstoffreich."},
+{name:"Mangold",kcal:19,prot:1.8,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Rucola",kcal:25,prot:2.6,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kopfsalat",kcal:14,prot:1.4,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Feldsalat",kcal:23,prot:2.1,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Sehr eisenreich."},
+{name:"Romanasalat",kcal:17,prot:1.2,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Eisbergsalat",kcal:14,prot:0.9,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Fenchel (frisch)",kcal:31,prot:1.2,iron:0.7,fodmap:1,substances:["Fructane","Mannitol"],why:"Enthält sowohl Fructane als auch Mannitol. Kann Blähungen und Krämpfe verursachen.",tip:"Bis ½ Tasse (ca. 45g) moderat FODMAP. Gut garen hilft."},
+{name:"Sellerie (Stange)",kcal:16,prot:0.7,iron:0.2,fodmap:1,substances:["Mannitol"],why:"Enthält Mannitol – zieht Wasser in den Darm, kann Durchfall verursachen.",tip:"Bis 1 Stange oft verträglich. Mehr als 1,5 Stangen = high FODMAP."},
+{name:"Knollensellerie",kcal:42,prot:1.5,iron:0.7,fodmap:2,substances:["Mannitol"],why:"Hoher Mannitol-Gehalt macht ihn zu einem häufigen Trigger.",tip:"Meiden oder auf sehr kleine Mengen (2 EL) beschränken."},
+{name:"Spargel (grün)",kcal:20,prot:2.2,iron:2.1,fodmap:1,substances:["Fructane"],why:"Enthält Fructane, besonders in den Spitzen. Gut bekannter Reizdarm-Trigger.",tip:"Bis 2–3 Stangen (ca. 80g) moderat FODMAP."},
+{name:"Spargel (weiß)",kcal:18,prot:1.9,iron:0.7,fodmap:2,substances:["Fructane","Inulin"],why:"Weißer Spargel enthält mehr Fructane und Inulin als grüner. Starker Reizauslöser.",tip:"Meiden bei Reizdarm."},
+{name:"Erbsen (grün, frisch)",kcal:81,prot:5.4,iron:1.5,fodmap:1,substances:["GOS"],why:"Enthält Galacto-Oligosaccharide (GOS), die von Darmbakterien fermentiert werden.",tip:"Bis ⅛ Tasse (ca. 20g) low FODMAP."},
+{name:"Artischocke",kcal:47,prot:3.3,iron:1.3,fodmap:2,substances:["Fructane","Inulin","GOS"],why:"Artischocken haben den höchsten bekannten FODMAP-Gehalt aller Gemüsesorten. Reich an Inulin und Fructanen. Selbst kleine Mengen lösen heftige Symptome aus.",tip:"Konsequent meiden."},
+{name:"Pilze (Champignon)",kcal:22,prot:3.1,iron:0.5,fodmap:2,substances:["Mannitol"],why:"Champignons sind extrem mannitolreich. Mannitol wird kaum absorbiert und zieht Wasser in den Darm.",tip:"Durch Austernpilze oder Shiitake ersetzen."},
+{name:"Austernpilze",kcal:33,prot:3.3,iron:1.3,fodmap:0,substances:[],why:"Kein signifikanter FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Guter Pilzersatz."},
+{name:"Shiitake (frisch)",kcal:34,prot:2.2,iron:0.4,fodmap:1,substances:["Mannitol (gering)"],why:"Geringerer Mannitol-Gehalt als Champignons. In kleinen Mengen verträglich.",tip:"Bis 2 Stück (ca. 15g) meist ok."},
+{name:"Austernpilze",kcal:33,prot:3.3,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Beste Pilzalternative bei Reizdarm."},
+{name:"Radieschen",kcal:16,prot:0.7,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Knoblauch",kcal:149,prot:6.4,iron:1.7,fodmap:2,substances:["Fructane"],why:"Knoblauch hat einen der höchsten Fructangehalte überhaupt. Schon kleinste Mengen (< 1 Zehe) reichen für eine starke FODMAP-Belastung. Häufigster versteckter Auslöser in Gerichten.",tip:"Konsequent meiden. Knoblauchöl (FODMAP-frei) als Alternative – die Fructane lösen sich nicht in Fett."},
+{name:"Zwiebel (gelb)",kcal:40,prot:1.1,iron:0.2,fodmap:2,substances:["Fructane","GOS"],why:"Zwiebeln sind extrem fructanreich. Einer der häufigsten und stärksten Reizdarm-Trigger überhaupt. Auch in kleinen Mengen oder Pulverform problematisch.",tip:"Konsequent meiden. Frühlingszwiebelgrün als Alternative."},
+{name:"Zwiebel (rot)",kcal:40,prot:1.1,iron:0.3,fodmap:2,substances:["Fructane","GOS"],why:"Gleich wie gelbe Zwiebel – hoher Fructan- und GOS-Gehalt.",tip:"Konsequent meiden."},
+{name:"Schalotten",kcal:72,prot:2.5,iron:1.2,fodmap:2,substances:["Fructane","GOS"],why:"Noch konzentriertere FODMAP-Belastung als Zwiebeln.",tip:"Konsequent meiden."},
+{name:"Lauch",kcal:31,prot:1.8,iron:2.1,fodmap:2,substances:["Fructane","GOS"],why:"Hoher Fructan- und GOS-Gehalt. Nur das grüne Lauchblatt ist low FODMAP.",tip:"Nur das dunkelgrüne Blattende verwenden – der weiße Stiel meiden."},
+{name:"Frühlingszwiebel (grüner Teil)",kcal:32,prot:1.8,iron:1.5,fodmap:0,substances:[],why:"Nur der grüne Teil ist FODMAP-frei – die Fructane befinden sich im weißen Teil.",tip:"Immer nur das grüne Ende verwenden. Gute Zwiebelersatz-Option."},
+{name:"Knoblauchöl (infusioniert)",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Fructane aus Knoblauch sind wasserlöslich, nicht fettlöslich – das Öl enthält nur den Geschmack, keine FODMAPs.",tip:"Sichere Alternative zu Knoblauch."},
+{name:"Ingwer (frisch)",kcal:80,prot:1.8,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Kann sogar Reizdarm-Symptome lindern."},
+{name:"Frühlingszwiebel (weißer Teil)",kcal:32,prot:1.8,iron:1.5,fodmap:2,substances:["Fructane"],why:"Der weiße Stiel enthält konzentrierte Fructane.",tip:"Nur grünen Teil verwenden."},
+{name:"Petersilie (frisch)",kcal:36,prot:3.0,iron:6.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Sehr eisenreich."},
+{name:"Basilikum (frisch)",kcal:23,prot:3.2,iron:3.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Schnittlauch",kcal:30,prot:3.3,iron:1.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Guter Zwiebelersatz."},
+{name:"Kurkuma (gemahlen)",kcal:354,prot:7.8,iron:41.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Entzündungshemmend. Als Gewürz eisenreich."},
+{name:"Kreuzkümmel (gemahlen)",kcal:375,prot:18,iron:66,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gutes Gewürz."},
+{name:"Oregano (getrocknet)",kcal:265,prot:9,iron:36,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt als Gewürz geeignet."},
+{name:"Lorbeerblatt",kcal:313,prot:7.6,iron:43,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Als Gewürz unbedenklich."},
+// ── OBST ──
+{name:"Erdbeeren",kcal:33,prot:0.7,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Blaubeeren",kcal:57,prot:0.7,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 40g.",tip:"Bis 40g unbegrenzt. Größere Mengen moderat FODMAP (Fructose)."},
+{name:"Himbeeren",kcal:52,prot:1.2,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 30 Stück.",tip:"Ausgezeichnete Wahl."},
+{name:"Brombeeren",kcal:43,prot:1.4,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 10 Stück.",tip:"Gut verträglich."},
+{name:"Johannisbeeren (rot)",kcal:56,prot:1.4,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Stachelbeeren",kcal:44,prot:0.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Kiwi",kcal:61,prot:1.1,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ananas (frisch)",kcal:50,prot:0.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Papaya",kcal:43,prot:0.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Verdauungsfördernd durch Papain-Enzym."},
+{name:"Mandarine",kcal:53,prot:0.8,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 2 Stück.",tip:"Gut verträglich."},
+{name:"Clementine",kcal:47,prot:0.9,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 2 Stück.",tip:"Gut verträglich."},
+{name:"Cantaloupe-Melone",kcal:34,prot:0.8,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis ½ Tasse.",tip:"Gut verträglich."},
+{name:"Zitrone (Saft)",kcal:29,prot:1.1,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Limette (Saft)",kcal:30,prot:0.7,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kokosnuss (Fleisch, frisch)",kcal:354,prot:3.3,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 40g.",tip:"Gut verträglich in normalen Mengen."},
+{name:"Apfel",kcal:52,prot:0.3,iron:0.1,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Äpfel enthalten mehr Fructose als Glucose – dieser Überschuss wird schlecht absorbiert. Zusätzlich enthält die Schale Sorbitol. Beides zusammen macht Äpfel zu einem der häufigsten Reizdarm-Auslöser.",tip:"Konsequent meiden. Alternativ: geschälte, kleine Mengen Birne (auch high, aber weniger)."},
+{name:"Birne",kcal:57,prot:0.4,iron:0.2,fodmap:2,substances:["Sorbitol","Fructose (excess)"],why:"Sehr hoher Sorbitol-Gehalt. Sorbitol wirkt osmotisch – zieht Wasser in den Darm und verursacht Durchfall.",tip:"Meiden. Kiwi oder Erdbeeren als Alternative."},
+{name:"Mango",kcal:65,prot:0.5,iron:0.2,fodmap:2,substances:["Fructose (excess)"],why:"Sehr hoher Fructosegehalt mit unausgewogenem Fructose-Glucose-Verhältnis. Häufiger Trigger.",tip:"Meiden oder auf 40g limitieren – noch als moderat eingestuft."},
+{name:"Wassermelone",kcal:30,prot:0.6,iron:0.2,fodmap:2,substances:["Fructose (excess)","Mannitol"],why:"Doppelte FODMAP-Belastung: überschüssige Fructose plus Mannitol. Einer der stärksten Obst-Trigger.",tip:"Konsequent meiden."},
+{name:"Honigmelone",kcal:36,prot:0.9,iron:0.2,fodmap:2,substances:["Mannitol","Fructose (excess)"],why:"Hoher Mannitol- und Fructosegehalt.",tip:"Meiden. Cantaloupe als Alternative."},
+{name:"Pfirsich (frisch)",kcal:39,prot:0.9,iron:0.3,fodmap:2,substances:["Sorbitol","Fructose (excess)"],why:"Hoher Sorbitol- und Fructosegehalt. Besonders in reifen Früchten konzentriert.",tip:"Meiden."},
+{name:"Nektarine",kcal:44,prot:1.1,iron:0.3,fodmap:2,substances:["Sorbitol"],why:"Ähnlich wie Pfirsich – hoher Sorbitolgehalt.",tip:"Meiden."},
+{name:"Pflaume (frisch)",kcal:46,prot:0.7,iron:0.2,fodmap:2,substances:["Sorbitol","Fructose (excess)"],why:"Hoher Sorbitolgehalt – bekannte laxierende Wirkung bei Reizdarm.",tip:"Konsequent meiden."},
+{name:"Kirsche (Süßkirsche)",kcal:63,prot:1.1,iron:0.4,fodmap:2,substances:["Sorbitol","Fructose (excess)"],why:"Schon 3 Kirschen überschreiten die FODMAP-Grenze durch hohen Sorbitol- und Fructosegehalt.",tip:"Konsequent meiden."},
+{name:"Banane (reif)",kcal:89,prot:1.1,iron:0.3,fodmap:2,substances:["Fructose (excess)"],why:"Reife Bananen haben ein ungünstiges Fructose-Glucose-Verhältnis. Je reifer, desto mehr freie Fructose.",tip:"Unreife Bananen bevorzugen – fester und greener = weniger FODMAP."},
+{name:"Banane (unreif, grün)",kcal:89,prot:1.1,iron:0.3,fodmap:1,substances:["Fructane (gering)"],why:"Enthält noch weniger freie Fructose, aber geringe Fructane. Meist verträglich.",tip:"Bis 1 mittelgroße unreife Banane low FODMAP."},
+{name:"Orange",kcal:47,prot:0.9,iron:0.1,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate Fructosebelastung. Einzelne Orange oft noch verträglich.",tip:"1 mittelgroße Orange meist ok."},
+{name:"Grapefruit",kcal:42,prot:0.8,iron:0.1,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate FODMAP-Belastung.",tip:"½ Frucht meist verträglich."},
+{name:"Weintrauben (rot)",kcal:69,prot:0.6,iron:0.4,fodmap:1,substances:["Fructose (moderat)"],why:"Bei größeren Mengen Fructoseüberschuss.",tip:"≤10 Trauben meist verträglich."},
+{name:"Weintrauben (grün)",kcal:67,prot:0.6,iron:0.4,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate Fructosebelastung.",tip:"≤10 Trauben meist verträglich."},
+{name:"Granatapfelkerne",kcal:83,prot:1.7,iron:0.3,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate Fructosebelastung bei größeren Mengen.",tip:"Kleine Mengen (ca. 45g) meist ok."},
+{name:"Aprikose (frisch)",kcal:48,prot:1.4,iron:0.4,fodmap:2,substances:["Sorbitol","Fructose (excess)"],why:"Hoher Sorbitolgehalt, ähnlich wie Pfirsich.",tip:"Meiden."},
+{name:"Avocado",kcal:160,prot:2.0,iron:0.6,fodmap:1,substances:["Sorbitol"],why:"Enthält Sorbitol, besonders in größeren Mengen. ⅛ Avocado = low FODMAP.",tip:"Bis ⅛ Avocado (ca. 30g) verträglich. Größere Mengen meiden."},
+// ── GETROCKNETE FRÜCHTE & SÜSSES ──
+{name:"Rosinen",kcal:299,prot:3.1,iron:1.9,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Konzentrierte Trockenfrüchte enthalten vielfach mehr Fructose und Sorbitol als frische Früchte. Schon 1 EL Rosinen überschreitet FODMAP-Grenze.",tip:"Konsequent meiden. Eisenreiche Alternativen: Kürbiskerne, Sesam."},
+{name:"Datteln",kcal:282,prot:2.5,iron:1.0,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Extrem konzentrierte Fructose und Sorbitol durch Trocknung.",tip:"Bis 1 Dattel moderat FODMAP – mehr meiden."},
+{name:"Aprikosen (getrocknet)",kcal:241,prot:3.4,iron:2.7,fodmap:2,substances:["Sorbitol"],why:"Sehr hoher Sorbitolgehalt durch Konzentration beim Trocknen.",tip:"Meiden. Eisenreiche Alternativen bevorzugen."},
+{name:"Feigen (getrocknet)",kcal:249,prot:3.3,iron:2.0,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Doppelte FODMAP-Belastung durch konzentrierte Fructose und Sorbitol.",tip:"Meiden."},
+{name:"Pflaumen (getrocknet / Backpflaumen)",kcal:240,prot:2.2,iron:0.9,fodmap:2,substances:["Sorbitol"],why:"Bekannte laxierende Wirkung durch sehr hohen Sorbitolgehalt. Stark konzentriert gegenüber frischer Pflaume.",tip:"Konsequent meiden."},
+{name:"Cranberries (getrocknet, gezuckert)",kcal:308,prot:0.1,iron:0.3,fodmap:2,substances:["Sorbitol","Fructose"],why:"Hoher Sorbitol- und Fructosegehalt, durch Zuckerzusatz noch verstärkt.",tip:"Meiden."},
+// ── NÜSSE & SAMEN ──
+{name:"Kürbiskerne",kcal:559,prot:30,iron:8.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Ausgezeichnete Eisen- und Proteinquelle. Unbegrenzt geeignet."},
+{name:"Sonnenblumenkerne",kcal:584,prot:21,iron:5.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Sesamsamen",kcal:573,prot:18,iron:14.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Unbegrenzt geeignet."},
+{name:"Chiasamen",kcal:486,prot:17,iron:7.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Ballaststoffe können bei sehr empfindlichem Darm anfangs blähen – langsam einführen."},
+{name:"Leinsamen",kcal:534,prot:18,iron:5.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Darmfreundlich. Gut verträglich."},
+{name:"Hanfsamen",kcal:553,prot:32,iron:7.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Vollständiges Protein. Unbegrenzt geeignet."},
+{name:"Walnüsse",kcal:654,prot:15,iron:2.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 30g.",tip:"Bis 30g gut verträglich."},
+{name:"Haselnüsse",kcal:628,prot:15,iron:4.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bis 15 Stück.",tip:"Gut verträglich."},
+{name:"Pinienkerne",kcal:673,prot:14,iron:5.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Macadamianüsse",kcal:718,prot:7.9,iron:3.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr gut verträglich."},
+{name:"Paranüsse",kcal:656,prot:14,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Max. 2–3 täglich wegen Selengehalt."},
+{name:"Mandeln (ganz)",kcal:579,prot:21,iron:3.7,fodmap:1,substances:["GOS","Fructane"],why:"Mandeln enthalten GOS und Fructane, die besonders bei größeren Mengen fermentiert werden und Blähungen verursachen.",tip:"Bis 10 Mandeln low FODMAP. Darüber moderat bis high."},
+{name:"Mandeln (gerieben / gemahlen)",kcal:579,prot:21,iron:3.7,fodmap:1,substances:["GOS","Fructane"],why:"Gleicher FODMAP-Gehalt wie ganze Mandeln – gemahlen ggf. schneller absorbiert.",tip:"Bis ca. 24g (2 EL) in Rezepten meist verträglich."},
+{name:"Mandelmehl",kcal:571,prot:24,iron:3.9,fodmap:1,substances:["GOS","Fructane"],why:"Konzentriertere Form. Moderate FODMAP-Belastung.",tip:"In kleinen Backmengen (≤24g) oft ok."},
+{name:"Cashewkerne",kcal:553,prot:18,iron:6.7,fodmap:2,substances:["GOS","Fructane"],why:"Hoher GOS- und Fructangehalt. Schon wenige Cashews können starke Symptome verursachen.",tip:"Konsequent meiden trotz hohem Eisengehalt."},
+{name:"Pistazien",kcal:562,prot:20,iron:3.9,fodmap:2,substances:["GOS","Fructane"],why:"Hoher GOS- und Fructangehalt. Starker Reizdarm-Trigger.",tip:"Konsequent meiden."},
+{name:"Erdnüsse (ungesalzen)",kcal:567,prot:26,iron:4.6,fodmap:0,substances:[],why:"Erdnüsse sind botanisch Hülsenfrüchte, aber ihr FODMAP-Gehalt ist niedrig.",tip:"Bis 32 Stück low FODMAP."},
+{name:"Erdnussbutter (ohne Zusätze)",kcal:588,prot:25,iron:1.7,fodmap:0,substances:[],why:"Kein signifikanter FODMAP-Anteil.",tip:"Bis 2 EL unbedenklich. Auf Süßungsmittel in der Zutatenliste achten."},
+{name:"Tahini (Sesammus)",kcal:595,prot:17,iron:9.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Unbegrenzt geeignet."},
+// ── HÜLSENFRÜCHTE ──
+{name:"Linsen (rot, gekocht)",kcal:116,prot:9,iron:3.3,fodmap:2,substances:["GOS","Fructane"],why:"Alle Linsen enthalten hohe Mengen GOS und Fructane. Typische Blähungskandidaten durch intensive bakterielle Fermentation.",tip:"Meiden oder sehr kleine Portionen (2 EL gekocht) wählen."},
+{name:"Linsen (grün/braun, gekocht)",kcal:116,prot:9,iron:3.3,fodmap:2,substances:["GOS","Fructane"],why:"Wie rote Linsen – hoher GOS- und Fructangehalt.",tip:"Meiden."},
+{name:"Kichererbsen (gekocht)",kcal:164,prot:9,iron:2.9,fodmap:2,substances:["GOS","Fructane"],why:"Hohe GOS-Konzentration. Auch nach langem Kochen bleibt ein erheblicher FODMAP-Gehalt.",tip:"Bis 42g (¼ Tasse) = moderat FODMAP. Mehr meiden."},
+{name:"Schwarze Bohnen (gekocht)",kcal:132,prot:8.9,iron:2.1,fodmap:2,substances:["GOS","Oligosaccharide"],why:"Alle Hülsenfrüchte enthalten Oligosaccharide. Schwarze Bohnen sind besonders reich daran.",tip:"Meiden."},
+{name:"Weiße Bohnen (gekocht)",kcal:139,prot:9.7,iron:3.7,fodmap:2,substances:["GOS","Fructane"],why:"Hoher GOS-Gehalt. Häufige Blähungsquelle.",tip:"Meiden."},
+{name:"Kidneybohnen (Dose, abgetropft)",kcal:127,prot:8.7,iron:2.9,fodmap:2,substances:["GOS"],why:"Auch abgetropft bleiben hohe GOS-Mengen erhalten.",tip:"Meiden."},
+{name:"Edamame",kcal:122,prot:11,iron:2.3,fodmap:2,substances:["GOS"],why:"Unreife Sojabohnen enthalten hohe GOS-Mengen.",tip:"Meiden."},
+{name:"Tofu (fest)",kcal:76,prot:8,iron:1.9,fodmap:0,substances:[],why:"Hergestellt aus Sojaprotein-Isolat, nicht aus ganzen Sojabohnen. Die GOS werden bei der Herstellung herausgefiltert.",tip:"Bis 140g low FODMAP. Gute vegane Proteinquelle."},
+{name:"Tempeh",kcal:193,prot:19,iron:2.7,fodmap:0,substances:[],why:"Fermentation baut GOS stark ab. Deutlich besser verträglich als ungekochte Sojabohnen.",tip:"Gut verträglich. Gute Eisen- und Proteinquelle."},
+{name:"Mungbohnensprossen",kcal:30,prot:3.0,iron:0.9,fodmap:0,substances:[],why:"Keimung reduziert GOS-Gehalt erheblich.",tip:"Gut verträglich."},
+{name:"Linsensprossen",kcal:106,prot:9.0,iron:3.2,fodmap:1,substances:["GOS (reduziert)"],why:"Keimung reduziert GOS, aber nicht vollständig.",tip:"Kleine Mengen meist verträglich."},
+// ── MILCH & MILCHPRODUKTE ──
+{name:"Kuhmilch (3,5%)",kcal:61,prot:3.2,iron:0.1,fodmap:2,substances:["Laktose"],why:"Laktose ist ein Disaccharid (Milchzucker), das bei Laktoseintoleranz nicht oder kaum gespalten wird. Unverdaute Laktose wird im Dickdarm fermentiert – Blähungen, Durchfall, Krämpfe.",tip:"Durch laktosefreie Milch oder Pflanzendrinks ersetzen."},
+{name:"Kuhmilch (1,5%)",kcal:47,prot:3.4,iron:0.1,fodmap:2,substances:["Laktose"],why:"Gleicher Laktosegehalt wie Vollmilch – Fettgehalt ändert FODMAP nicht.",tip:"Laktosefreie Variante bevorzugen."},
+{name:"Laktosefreie Milch",kcal:61,prot:3.2,iron:0.1,fodmap:0,substances:[],why:"Laktose wird enzymatisch gespalten. Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet als Milchersatz."},
+{name:"Kokosmilch (Dose, vollfett)",kcal:197,prot:2.0,iron:3.3,fodmap:1,substances:["Sorbitol (gering)"],why:"Enthält geringe Sorbitolmengen. Bei großen Portionen kann dies eine Rolle spielen.",tip:"Bis ½ Tasse meist ok."},
+{name:"Kokosmilch (Tetrapack, leicht)",kcal:24,prot:0.2,iron:0.1,fodmap:0,substances:[],why:"Verdünnte Variante – FODMAP-Belastung sehr gering.",tip:"Gut als Ersatzmilch geeignet."},
+{name:"Reisdrink",kcal:47,prot:0.3,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr gut verträglich."},
+{name:"Mandelmilch (ungesüßt)",kcal:15,prot:0.6,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Haferdrink",kcal:46,prot:1.0,iron:0.4,fodmap:1,substances:["GOS (Hafer)"],why:"Hafer-GOS können bei empfindlichem Darm Beschwerden verursachen.",tip:"Kleine Mengen (bis 30ml) meist ok."},
+{name:"Sojamilch (aus Sojaprotein-Isolat)",kcal:40,prot:3.0,iron:0.5,fodmap:0,substances:[],why:"Aus Isolat hergestellt – GOS werden herausgefiltert.",tip:"Gut geeignet. Auf Zutatenliste 'Sojaprotein-Isolat' achten."},
+{name:"Sojamilch (aus Sojabohnen)",kcal:54,prot:3.3,iron:0.5,fodmap:2,substances:["GOS"],why:"Aus ganzen Sojabohnen enthält alle GOS.",tip:"Meiden. Sojamilch aus Isolat oder andere Pflanzendrinks bevorzugen."},
+{name:"Griechischer Joghurt (Vollfett)",kcal:97,prot:9.0,iron:0.1,fodmap:1,substances:["Laktose (reduziert)"],why:"Durch Abtropfen reduzierter Laktosegehalt gegenüber normalem Joghurt. Moderate Belastung.",tip:"Bis 170g meist verträglich."},
+{name:"Skyr",kcal:63,prot:11,iron:0.1,fodmap:0,substances:[],why:"Herstellungsprozess reduziert Laktose stark.",tip:"Gut verträglich. Sehr proteinreich."},
+{name:"Laktosefreier Joghurt",kcal:61,prot:3.5,iron:0.1,fodmap:0,substances:[],why:"Enzymatisch laktosefrei gemacht.",tip:"Unbegrenzt geeignet."},
+{name:"Quark (Magerquark)",kcal:67,prot:12,iron:0.1,fodmap:1,substances:["Laktose"],why:"Enthält noch merkliche Laktosemengen.",tip:"Kleine Portionen oft verträglich."},
+{name:"Parmesan",kcal:431,prot:38,iron:0.8,fodmap:0,substances:[],why:"Langer Reifeprozess baut Laktose vollständig ab.",tip:"Unbegrenzt geeignet."},
+{name:"Cheddar (gereift)",kcal:403,prot:25,iron:0.7,fodmap:0,substances:[],why:"Gereifter Hartkäse – nahezu laktosefrei.",tip:"Unbegrenzt geeignet."},
+{name:"Gouda (gereift)",kcal:356,prot:25,iron:0.3,fodmap:0,substances:[],why:"Gereifter Hartkäse – laktosefrei.",tip:"Unbegrenzt geeignet."},
+{name:"Mozzarella",kcal:280,prot:28,iron:0.3,fodmap:0,substances:[],why:"Sehr wenig Laktose durch Herstellungsprozess.",tip:"Gut verträglich."},
+{name:"Feta",kcal:264,prot:14,iron:0.7,fodmap:0,substances:[],why:"Kaum Laktose.",tip:"Gut verträglich."},
+{name:"Frischkäse (Doppelrahmstufe)",kcal:342,prot:5.9,iron:0.2,fodmap:1,substances:["Laktose"],why:"Enthält moderate Laktosemengen.",tip:"Kleine Mengen oft verträglich."},
+{name:"Ricotta",kcal:174,prot:11,iron:0.4,fodmap:1,substances:["Laktose"],why:"Höherer Laktosegehalt als gereifter Käse.",tip:"Bis 60g meist ok."},
+{name:"Camembert",kcal:300,prot:19.8,iron:0.3,fodmap:0,substances:[],why:"Reifung baut Laktose ab.",tip:"Gut verträglich."},
+{name:"Butter",kcal:717,prot:0.9,iron:0.0,fodmap:0,substances:[],why:"Nahezu kein Wasseranteil und damit kaum Laktose.",tip:"Unbegrenzt geeignet."},
+{name:"Sahne (Schlagsahne)",kcal:337,prot:2.1,iron:0.1,fodmap:0,substances:[],why:"Wenig Laktose durch hohen Fettgehalt.",tip:"Bis 60ml low FODMAP."},
+{name:"Ghee (geklärte Butter)",kcal:900,prot:0.5,iron:0.0,fodmap:0,substances:[],why:"Klar – kein Wasseranteil, kein Milchprotein, keine Laktose.",tip:"Unbegrenzt geeignet. Beste Buttervariante bei Reizdarm."},
+{name:"Saure Sahne / Sauerrahm",kcal:212,prot:2.7,iron:0.1,fodmap:1,substances:["Laktose"],why:"Enthält merkliche Laktosemengen.",tip:"Kleine Mengen oft ok."},
+// ── SÜSSES & ZUCKER ──
+{name:"Zucker (weiß)",kcal:400,prot:0,iron:0,fodmap:0,substances:[],why:"Reiner Haushaltszucker (Saccharose) enthält keine FODMAPs – er wird vollständig zu Glucose und Fructose gespalten.",tip:"In normalen Mengen unbedenklich bzgl. FODMAPs."},
+{name:"Zucker (braun)",kcal:380,prot:0,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbedenklich."},
+{name:"Ahornsirup (reiner)",kcal:260,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Verträgliche Süßungsmittel-Alternative zu Honig."},
+{name:"Honig",kcal:304,prot:0.3,iron:0.4,fodmap:2,substances:["Fructose (excess)"],why:"Honig enthält mehr Fructose als Glucose – dieser Überschuss wird schlecht absorbiert und wirkt osmotisch im Darm.",tip:"Meiden. Ahornsirup oder Reissirup als Alternative."},
+{name:"Agavendicksaft",kcal:310,prot:0,iron:0.1,fodmap:2,substances:["Fructose (excess)"],why:"Sehr hoher Fructosegehalt – höher als Honig. Starker FODMAP-Auslöser trotz vermeintlich gesunden Images.",tip:"Konsequent meiden."},
+{name:"Stevia (rein)",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet als Süßungsalternative."},
+{name:"Reissirup",kcal:316,prot:0.1,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute Süßungsalternative."},
+{name:"Kokosblütenzucker",kcal:375,prot:0,iron:0.9,fodmap:1,substances:["Inulin (gering)"],why:"Enthält geringe Mengen Inulin (präbiotischer Ballaststoff), der fermentiert werden kann.",tip:"In kleinen Mengen ok."},
+{name:"Sorbit / Sorbitol (Zusatz E420)",kcal:240,prot:0,iron:0,fodmap:2,substances:["Sorbitol"],why:"Synthetischer Zuckeralkohol, der kaum resorbiert wird. Zieht Wasser in den Darm, laxierende Wirkung. Findet sich in Kaugummis, Light-Produkten, Diätjoghurts.",tip:"Alle Produkte mit Sorbitol meiden. In der Zutatenliste als E420 erkennbar."},
+{name:"Xylitol (Birkenzucker, E967)",kcal:240,prot:0,iron:0,fodmap:2,substances:["Sorbitol-äquivalent"],why:"Wie Sorbitol – Zuckeralkohol mit osmotischer Wirkung im Darm.",tip:"Meiden. In zuckerfreien Kaugummis und Diabetikerprodukten enthalten."},
+{name:"Milchschokolade",kcal:535,prot:7.6,iron:2.4,fodmap:2,substances:["Laktose","Fructose"],why:"Enthält Laktose aus Milchpulver und kann Fructoseüberschuss enthalten.",tip:"Meiden. Dunkle Schokolade (>70%) in kleinen Mengen bevorzugen."},
+{name:"Dunkle Schokolade (85%)",kcal:598,prot:12,iron:11.9,fodmap:1,substances:["GOS (gering)"],why:"Geringe GOS-Mengen aus Kakao. In kleinen Portionen meist verträglich.",tip:"Bis 20–30g oft ok. Sehr eisenreich."},
+{name:"Dunkle Schokolade (70%)",kcal:567,prot:8.0,iron:8.0,fodmap:1,substances:["GOS (moderat)"],why:"Mehr Kakao = mehr GOS als hellere Schokolade.",tip:"Bis 30g oft verträglich."},
+{name:"Kakaopulver (ungesüßt)",kcal:228,prot:19.6,iron:13.9,fodmap:1,substances:["GOS"],why:"Kakao enthält GOS. In normalen Kochmengen meist verträglich.",tip:"2 EL meist ok. Sehr eisenreich."},
+// ── FETTE & ÖLE ──
+{name:"Olivenöl",kcal:884,prot:0,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kokosöl (nativ)",kcal:862,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Rapsöl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Sonnenblumenöl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Leinöl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Reich an Omega-3. Nicht zum Erhitzen."},
+// ── GETRÄNKE ──
+{name:"Wasser (still)",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Pfefferminztee",kcal:0,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Kann krampflösend bei Reizdarm wirken."},
+{name:"Kamillentee",kcal:0,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Darmberuhigend."},
+{name:"Ingwertee",kcal:2,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Entzündungshemmend, verdauungsfördernd."},
+{name:"Grüntee",kcal:1,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Schwarztee",kcal:1,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gerbstoffe hemmen Eisenaufnahme – nicht zu Mahlzeiten trinken."},
+{name:"Kaffee (schwarz)",kcal:2,prot:0.3,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Kann aber Darmtätigkeit anregen.",tip:"Individuell verschieden. Espresso oft besser verträglich als Filterkaffee."},
+{name:"Orangensaft (frisch gepresst)",kcal:45,prot:0.7,iron:0.2,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate Fructosebelastung.",tip:"Bis 125ml meist ok."},
+{name:"Apfelsaft",kcal:46,prot:0.1,iron:0.1,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Hoher Fructoseüberschuss und Sorbitolgehalt. Einer der stärksten Fruchtsaft-Trigger.",tip:"Meiden. Wasser mit Zitrone als Alternative."},
+{name:"Kokoswasser",kcal:19,prot:0.7,iron:0.3,fodmap:1,substances:["Sorbitol (gering)"],why:"Enthält geringe Sorbitolmengen.",tip:"Bis 100ml meist ok."},
+{name:"Bier (normale Menge)",kcal:43,prot:0.5,iron:0.0,fodmap:2,substances:["Fructane (Gerste/Weizen)","Gluten"],why:"Bier aus Gerste und Weizen enthält Fructane. Besonders Weizenbier ist problematisch.",tip:"Glutenfreies Bier bevorzugen. In kleinen Mengen (330ml) oft noch verträglich."},
+{name:"Rotwein",kcal:85,prot:0.1,iron:0.5,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"In kleinen Mengen ok. Alkohol selbst kann Darmschleimhaut reizen."},
+{name:"Weißwein",kcal:82,prot:0.1,iron:0.4,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"In kleinen Mengen ok."},
+// ── SAUCEN & WÜRZMITTEL ──
+{name:"Senf (mittelscharfer)",kcal:67,prot:3.7,iron:1.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Sojasauce (regulär)",kcal:53,prot:8.1,iron:2.4,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"Normaler Gebrauch ok. Glutenfreie Tamari-Variante für strikte Glutenvermeidung."},
+{name:"Fischsauce",kcal:35,prot:5.1,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Worcestershire-Sauce",kcal:78,prot:0,iron:1.4,fodmap:1,substances:["Fructane (Tamarinde, Zwiebel)"],why:"Enthält Zwiebel- und Tamarindenzusätze mit Fructanen.",tip:"In sehr kleinen Mengen (1 TL) meist ok."},
+{name:"Ketchup",kcal:100,prot:1.5,iron:0.6,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Ketchup enthält oft Mais-Sirup (hoher Fructosegehalt) und Zwiebelpulver.",tip:"Meiden. Selbst hergestellte Tomatensauce ohne Zwiebeln bevorzugen."},
+{name:"Mayonnaise (klassisch)",kcal:680,prot:1.4,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"In Maßen geeignet."},
+{name:"Balsamico-Essig",kcal:88,prot:0.5,iron:0.7,fodmap:2,substances:["Fructose (excess)"],why:"Enthält konzentrierte Fructose aus Weintrauben.",tip:"Normaler Essig oder Apfelessig bevorzugen."},
+{name:"Weißweinessig",kcal:18,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Apfelessig",kcal:22,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Tabasco",kcal:12,prot:0.4,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+// ── FERTIGPRODUKTE & DIVERSES ──
+{name:"Tofu (weich / Silken Tofu)",kcal:55,prot:5.3,iron:1.0,fodmap:1,substances:["GOS (gering)"],why:"Weicher Tofu enthält mehr Molke und damit etwas mehr GOS als fester Tofu.",tip:"Kleinere Mengen meist ok."},
+{name:"Sojanudeln",kcal:337,prot:17,iron:2.3,fodmap:2,substances:["GOS"],why:"Hergestellt aus ganzen Sojabohnen – GOS-Gehalt hoch.",tip:"Meiden. Reisnudeln als Alternative."},
+{name:"Glutenfreie Pasta (Mais/Reis)",kcal:142,prot:3.2,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Dinkel-Pasta (gekocht)",kcal:124,prot:5,iron:1.2,fodmap:2,substances:["Fructane"],why:"Dinkel enthält relevante Fructane. Pasta reduziert durch Kochwasser einen Teil, bleibt aber high FODMAP.",tip:"Meiden. Reis- oder Maispasta verwenden."},
+{name:"Weizengrieß (Couscous)",kcal:376,prot:13,iron:1.1,fodmap:2,substances:["Fructane (Weizen)"],why:"Aus Weizen hergestellt – hoher Fructangehalt.",tip:"Durch Reisgrieß oder Hirse ersetzen."},
+{name:"Popcorn (ungesüßt)",kcal:387,prot:12,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Guter Snack in normalen Mengen."},
+{name:"Reispapier",kcal:344,prot:0.6,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+// ── ADDITIONAL VEGETABLES & HERBS ──
+{name:"Oliven (grün, eingelegt)",kcal:145,prot:1.0,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Oliven (schwarz, eingelegt)",kcal:115,prot:0.8,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kapern",kcal:23,prot:2.4,iron:1.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Wasabi (reiner Meerrettich)",kcal:109,prot:4.8,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Meerrettich (gerieben)",kcal:48,prot:1.2,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Dill (frisch)",kcal:43,prot:3.5,iron:6.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Unbegrenzt geeignet."},
+{name:"Minze (frisch)",kcal:70,prot:3.8,iron:5.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Verdauungsfördernd. Unbegrenzt geeignet."},
+{name:"Thymian (frisch)",kcal:101,prot:5.6,iron:17.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich als Gewürz."},
+{name:"Rosmarin (frisch)",kcal:131,prot:3.3,iron:6.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Koriander (frisch)",kcal:23,prot:2.1,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Safran",kcal:310,prot:11,iron:11.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich als Gewürz."},
+{name:"Zimt (gemahlen)",kcal:247,prot:4.0,iron:8.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Vanille (echte Schote)",kcal:288,prot:0.1,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Kardamom (gemahlen)",kcal:311,prot:10.8,iron:13.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Verdauungsunterstützend, eisenreich."},
+{name:"Hefe (Trockenhefe)",kcal:325,prot:41,iron:20,fodmap:1,substances:["Mannan (Hefezellwand)"],why:"Hefe selbst enthält keine klassischen FODMAPs, kann aber durch Zellwandbestandteile bei manchen Personen reizen.",tip:"In normalen Backmengen meist ok."},
+{name:"Backpulver",kcal:53,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Natron",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Gelatine (neutral)",kcal:335,prot:85,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Agar-Agar",kcal:26,prot:0.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Vegane Gelatiinealternative, gut verträglich."},
+{name:"Pfeilwurzelmehl",kcal:357,prot:0.3,iron:2.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut als Bindemittel."},
+{name:"Flohsamenschalen",kcal:217,prot:2.3,iron:7.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Quellfähige Ballaststoffe.",tip:"Sehr darmfreundlich. Langsam einführen, viel Wasser trinken."},
+// ── MEHR OBST ──
+{name:"Ananas (Dose, in eigenem Saft)",kcal:60,prot:0.4,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Drachenfrucht (Pitaya)",kcal:60,prot:1.2,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Lychee",kcal:66,prot:0.8,iron:0.3,fodmap:2,substances:["Fructose (excess)"],why:"Überwiegend Fructose – ungünstiges Glucose/Fructose-Verhältnis.",tip:"Meiden oder max. 5 Stück."},
+{name:"Jackfruit (jung, in Wasser, Dose)",kcal:35,prot:1.7,iron:0.8,fodmap:2,substances:["GOS"],why:"Enthält GOS, besonders als Fleischersatz in größeren Mengen problematisch.",tip:"Kleine Mengen (ca. 75g) oft noch ok."},
+{name:"Marmelade (Erdbeere, ohne Sorbitol)",kcal:250,prot:0.4,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Sorbitol/Fructose-Zusatz.",tip:"Auf Zutatenliste achten."},
+{name:"Marmelade (Aprikose)",kcal:240,prot:0.4,iron:0.3,fodmap:2,substances:["Sorbitol"],why:"Aprikosensorbitol auch in Marmelade enthalten.",tip:"Meiden."},
+{name:"Kürbissuppe (ohne Zwiebel/Knoblauch)",kcal:45,prot:1.5,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch.",tip:"Rezept anpassen: Knoblauchöl statt Knoblauch verwenden."},
+// ── WEITERE GEMÜSE ──
+{name:"Palmherzen (Dose)",kcal:29,prot:2.7,iron:3.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich, eisenreich."},
+{name:"Wasserkastanien (Dose)",kcal:97,prot:2.0,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Bambussprossen (Dose)",kcal:27,prot:2.6,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Bohnenkeimlinge",kcal:30,prot:3.0,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Okra",kcal:33,prot:2.0,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Bok Choy / Pak Choi Baby",kcal:12,prot:1.3,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Endiviensalat",kcal:17,prot:1.3,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Chicoree",kcal:23,prot:1.7,iron:0.2,fodmap:2,substances:["Inulin","Fructane"],why:"Chicoree ist extrem reich an Inulin – einem Präbiotikum, das intensiv fermentiert wird. Starker Reizauslöser.",tip:"Meiden."},
+{name:"Rhabarber",kcal:21,prot:0.9,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich. Nur erhitzt essen (Oxalsäure)."},
+{name:"Pastinake",kcal:75,prot:1.8,iron:0.6,fodmap:1,substances:["Fructane","GOS"],why:"Moderate Fructan- und GOS-Belastung.",tip:"Bis ½ Tasse meist verträglich."},
+{name:"Topinambur",kcal:73,prot:2.0,iron:3.4,fodmap:2,substances:["Inulin","Fructane"],why:"Extrem hoher Inulingehalt. Einer der stärksten Reizdarm-Trigger unter Gemüsesorten – bekannt für starke Blähungen.",tip:"Konsequent meiden."},
+{name:"Schwarzwurzel",kcal:82,prot:3.3,iron:3.3,fodmap:2,substances:["Inulin"],why:"Sehr hoher Inulingehalt – ähnlich wie Topinambur.",tip:"Meiden."},
+{name:"Brokkoli-Röschen (gegart)",kcal:35,prot:2.4,iron:0.7,fodmap:1,substances:["GOS","Fructane"],why:"Moderate FODMAP-Belastung, die durch langes Garen etwas reduziert wird.",tip:"Bis 75g und gut gegart meist verträglich."},
+{name:"Rosenkohl",kcal:43,prot:3.4,iron:1.4,fodmap:2,substances:["GOS","Fructane","Sorbitol"],why:"Dreifache FODMAP-Belastung. Zusätzlich Schwefelverbindungen, die Blähungen fördern.",tip:"Meiden bei Reizdarm."},
+{name:"Kohlsprossen / Kohlgemüse",kcal:43,prot:3.4,iron:1.4,fodmap:2,substances:["GOS","Fructane"],why:"Hoher GOS- und Fructangehalt.",tip:"Meiden."},
+
+// ── MEHR FISCH & MEERESFRÜCHTE ──
+{name:"Pangasius (gedünstet)",kcal:89,prot:16,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Tilapia (gedünstet)",kcal:96,prot:20,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Scholle (gedünstet)",kcal:91,prot:19,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Rotbarsch",kcal:90,prot:18,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Hecht (gedünstet)",kcal:84,prot:18,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Aal (geräuchert)",kcal:289,prot:18,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Jakobsmuscheln",kcal:88,prot:17,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Hummer (gekocht)",kcal:89,prot:19,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Languste",kcal:91,prot:20,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Krebsfleisch",kcal:83,prot:17,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+
+// ── MEHR FLEISCH ──
+{name:"Kaninchen (Keule, gegart)",kcal:173,prot:29,iron:1.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Entenleber",kcal:136,prot:18,iron:9.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich."},
+{name:"Rinderleber",kcal:135,prot:21,iron:6.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Ausgezeichnete Eisenquelle."},
+{name:"Hühnerleber",kcal:119,prot:17,iron:8.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich."},
+{name:"Blutwurst",kcal:379,prot:14,iron:6.4,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"Sehr eisenreich. Auf Zwiebelzusatz in Fertigprodukten achten."},
+{name:"Mortadella",kcal:311,prot:14,iron:1.4,fodmap:0,substances:[],why:"Kein relevanter FODMAP-Anteil.",tip:"Auf Pistazien und Knoblauch in Zutatenliste achten."},
+{name:"Prosciutto (roh)",kcal:215,prot:25,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Bratwurst (Schwein, gebraten)",kcal:301,prot:14,iron:1.0,fodmap:1,substances:["Fructane (Gewürze)"],why:"Fertige Bratwürste enthalten oft Gewürzmischungen mit Zwiebel- oder Knoblauchpulver.",tip:"Selbst hergestellte Bratwurst ohne diese Zusätze ist low FODMAP."},
+{name:"Frankfurter Würstchen",kcal:274,prot:12,iron:0.8,fodmap:1,substances:["Fructane (Gewürze möglich)"],why:"Industrieprodukt – oft enthält die Würzmischung Zwiebel- oder Knoblauchpulver.",tip:"Zutatenliste prüfen. Reine Fleischwürstchen ohne Gewürzmischung bevorzugen."},
+
+// ── MEHR GEMÜSE & KRÄUTER ──
+{name:"Brunnenkresse",kcal:11,prot:2.3,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Sehr nährstoffreich."},
+{name:"Portulak",kcal:20,prot:1.7,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Gut in Salaten."},
+{name:"Bärlauch (Saison, frisch)",kcal:36,prot:3.3,iron:1.9,fodmap:0,substances:[],why:"Trotz Knoblauch-Aroma enthält Bärlauch kaum Fructane.",tip:"Frisch in kleinen Mengen gut verträglich."},
+{name:"Sauerampfer",kcal:22,prot:2.0,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Brennnessel (blanchiert)",kcal:42,prot:3.7,iron:3.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich."},
+{name:"Wildkräutersalat",kcal:20,prot:1.8,iron:2.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Yam (Yamswurzel, gekocht)",kcal:118,prot:1.5,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Taro (Kolokasie, gekocht)",kcal:112,prot:1.5,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Maniok / Cassava (gekocht)",kcal:160,prot:1.4,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich. Roh giftig – immer garen."},
+{name:"Lotussprossen",kcal:74,prot:2.6,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Nori-Algen (getrocknet)",kcal:35,prot:5.8,iron:2.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Reich an Eisen und Mineralstoffen."},
+{name:"Wakame-Algen (getrocknet)",kcal:45,prot:3.0,iron:2.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Spirulina (Pulver)",kcal:290,prot:57,iron:28.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Außerordentlich eisenreich. 1 TL täglich als Supplement sinnvoll."},
+{name:"Chlorella (Pulver)",kcal:255,prot:45,iron:130,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich als Nahrungsergänzung."},
+
+// ── MEHR GETREIDE & BACKWAREN ──
+{name:"Hirsebrot (glutenfrei)",kcal:215,prot:4.8,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute Brot-Alternative."},
+{name:"Buchweizenbrot",kcal:250,prot:7.0,iron:2.1,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Reiswaffeln (Mais-Reis-Mix)",kcal:375,prot:6.5,iron:1.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Guter Snack."},
+{name:"Teff (Zwerghirse, gekocht)",kcal:101,prot:3.9,iron:2.0,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Sehr eisenreich für ein Getreide."},
+{name:"Sorghumhirse (gekocht)",kcal:110,prot:3.5,iron:1.5,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Reisbrei (mit Wasser)",kcal:65,prot:1.4,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr sanft bei akuten Beschwerden."},
+{name:"Haferschleim (glutenfrei, Wasser)",kcal:58,prot:2.0,iron:0.5,fodmap:1,substances:["GOS (gering)"],why:"Geringe GOS-Menge durch Hafer. Dünn gekochter Schleim oft verträglicher als feste Haferflocken.",tip:"In kleinen Mengen meist ok."},
+{name:"Maiswaffeln (ungesalzen)",kcal:380,prot:7.0,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Reiscracker (ungewürzt)",kcal:390,prot:7.0,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+
+// ── MEHR NÜSSE & SAMEN ──
+{name:"Mohnsamen (blau)",kcal:525,prot:18,iron:9.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich."},
+{name:"Hanfprotein (Pulver)",kcal:360,prot:50,iron:9.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute vegane Proteinquelle."},
+{name:"Reisprotein (Pulver)",kcal:360,prot:75,iron:3.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich als Proteinshake-Basis."},
+{name:"Erbsenprotein (Pulver)",kcal:370,prot:80,iron:8.0,fodmap:1,substances:["GOS (verarbeitet)"],why:"Erbsenprotein-Isolat enthält weniger GOS als ganze Erbsen, aber noch moderate Mengen.",tip:"In kleinen Mengen meist verträglich."},
+{name:"Molkenprotein (Whey, Isolat)",kcal:380,prot:90,iron:0.5,fodmap:0,substances:[],why:"Weitgehend laktosefrei durch Isolat-Herstellung.",tip:"Gut verträglich."},
+{name:"Casseinprotein",kcal:370,prot:87,iron:0.3,fodmap:1,substances:["Laktose (Spuren)"],why:"Kann Spuren Laktose enthalten.",tip:"Isolat-Form bevorzugen."},
+
+// ── MEHR MILCHPRODUKTE ──
+{name:"Kefir (Vollmilch)",kcal:62,prot:3.5,iron:0.1,fodmap:1,substances:["Laktose (reduziert)"],why:"Fermentation reduziert Laktosegehalt, aber nicht vollständig.",tip:"Kleine Mengen oft ok. Kefir aus laktosefreier Milch bevorzugen."},
+{name:"Kefir (laktosefrei)",kcal:62,prot:3.5,iron:0.1,fodmap:0,substances:[],why:"Enzymatisch laktosefrei gemacht.",tip:"Gut verträglich."},
+{name:"Buttermilch",kcal:40,prot:3.3,iron:0.1,fodmap:2,substances:["Laktose"],why:"Enthält vollständige Laktosemenge ähnlich wie Kuhmilch.",tip:"Durch laktosefreien Kefir ersetzen."},
+{name:"Kondensmilch (gezuckert)",kcal:321,prot:7.9,iron:0.2,fodmap:2,substances:["Laktose","Fructose"],why:"Doppelte Belastung: hoher Laktosegehalt und oft Fructose-Sirup als Zusatz.",tip:"Konsequent meiden."},
+{name:"Ziegenfrischkäse",kcal:265,prot:18,iron:1.0,fodmap:0,substances:[],why:"Ziegenmilchkäse enthält andere Proteinstrukturen und weniger Laktose als Kuhmilchprodukte.",tip:"Oft besser verträglich. Gut geeignet."},
+{name:"Ziegenmilch",kcal:69,prot:3.6,iron:0.1,fodmap:1,substances:["Laktose (ähnlich Kuh)"],why:"Ähnlicher Laktosegehalt wie Kuhmilch, aber andere Fettstruktur.",tip:"Individuell verschieden – einige vertragen sie besser."},
+{name:"Streichkäse (Scheiben, gereift)",kcal:290,prot:18,iron:0.5,fodmap:0,substances:[],why:"Gereifter Käse – nahezu laktosefrei.",tip:"Unbegrenzt geeignet."},
+{name:"Hüttenkäse (Cottage Cheese)",kcal:98,prot:11,iron:0.1,fodmap:1,substances:["Laktose"],why:"Enthält noch merkliche Laktosemengen.",tip:"Kleine Portionen oft ok."},
+{name:"Mascarpone",kcal:429,prot:4.5,iron:0.2,fodmap:1,substances:["Laktose"],why:"Sehr fettreich, enthält noch Laktose.",tip:"Kleine Mengen meist ok."},
+{name:"Brie",kcal:334,prot:20,iron:0.5,fodmap:0,substances:[],why:"Reifungsprozess reduziert Laktose stark.",tip:"Gut verträglich."},
+{name:"Emmentaler",kcal:380,prot:29,iron:0.4,fodmap:0,substances:[],why:"Gereifter Hartkäse – nahezu laktosefrei.",tip:"Unbegrenzt geeignet."},
+{name:"Gruyère",kcal:413,prot:30,iron:0.4,fodmap:0,substances:[],why:"Sehr langer Reifeprozess – nahezu laktosefrei.",tip:"Unbegrenzt geeignet."},
+
+// ── MEHR OBST ──
+{name:"Feigen (frisch)",kcal:74,prot:0.8,iron:0.4,fodmap:2,substances:["Fructose (excess)"],why:"Überwiegend freie Fructose.",tip:"Meiden."},
+{name:"Maracuja (Passionsfrucht)",kcal:97,prot:2.2,iron:1.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil in kleinen Mengen.",tip:"Gut verträglich."},
+{name:"Sternfrucht (Karambole)",kcal:31,prot:1.0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Guave (frisch)",kcal:68,prot:2.6,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich. Vit-C-reich."},
+{name:"Kumquat",kcal:71,prot:1.9,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Rambutan",kcal:82,prot:0.9,iron:0.4,fodmap:1,substances:["Fructose (moderat)"],why:"Moderate Fructosebelastung.",tip:"Kleine Mengen meist ok."},
+{name:"Longan",kcal:60,prot:1.3,iron:0.1,fodmap:2,substances:["Fructose (excess)"],why:"Ähnlich wie Lychee – hoher Fructosegehalt.",tip:"Meiden."},
+{name:"Preiselbeeren (frisch)",kcal:46,prot:0.4,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Sanddornbeeren",kcal:146,prot:1.5,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr vit-C-reich."},
+{name:"Acerola (frisch)",kcal:32,prot:0.4,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Extrem vit-C-reich."},
+{name:"Nektarinen (Dose, in Saft)",kcal:44,prot:0.6,iron:0.2,fodmap:2,substances:["Sorbitol","Fructose"],why:"Konzentrierte FODMAPs durch Einmachprozess.",tip:"Meiden."},
+{name:"Pfirsiche (Dose, in Saft)",kcal:44,prot:0.6,iron:0.2,fodmap:2,substances:["Sorbitol","Fructose"],why:"Konzentrierte FODMAPs.",tip:"Meiden."},
+{name:"Birnen (Dose, in Saft)",kcal:52,prot:0.2,iron:0.1,fodmap:2,substances:["Sorbitol","Fructose"],why:"Konzentrierte Sorbitol- und Fructosebelastung.",tip:"Konsequent meiden."},
+{name:"Ananas (getrocknet)",kcal:285,prot:1.0,iron:1.5,fodmap:1,substances:["Fructose (moderat)"],why:"Trocknung konzentriert Fructose moderat.",tip:"Kleine Mengen (ca. 15g) oft ok."},
+{name:"Kokoschips (getrocknet, ungesüßt)",kcal:660,prot:6.9,iron:3.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+
+// ── MEHR GETRÄNKE ──
+{name:"Hagebuttentee",kcal:2,prot:0.1,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Fencheltee",kcal:2,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Blähungslösend – gut bei Reizdarm."},
+{name:"Melissentee",kcal:1,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Beruhigend für Darm und Nerven."},
+{name:"Rooibostee",kcal:1,prot:0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich, koffeinfrei."},
+{name:"Holundersaft (pur)",kcal:49,prot:0.5,iron:1.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Eisenreich. Gut verträglich."},
+{name:"Tomatensaft (ohne Gewürze)",kcal:17,prot:0.9,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Karrottensaft",kcal:40,prot:0.9,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Sprudel / Mineralwasser",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Kohlensäure kann Blähungen begünstigen – individuell testen."},
+{name:"Prosecco / Sekt",kcal:80,prot:0.1,iron:0.4,fodmap:1,substances:["Fructose (gering)"],why:"Geringe Restmengen Fructose nach Gärung.",tip:"In kleinen Mengen meist ok."},
+{name:"Gin (pur)",kcal:263,prot:0,iron:0,fodmap:0,substances:[],why:"Destillierter Alkohol enthält keine FODMAPs.",tip:"Alkohol selbst reizt die Darmschleimhaut – in Maßen konsumieren."},
+{name:"Wodka (pur)",kcal:231,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Alkohol selbst ist kein FODMAP, kann aber Reizdarm-Symptome verschlimmern."},
+
+// ── MEHR SAUCEN & GEWÜRZE ──
+{name:"Tomatenmark (ohne Zwiebeln)",kcal:82,prot:4.5,iron:2.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch.",tip:"Unbegrenzt geeignet."},
+{name:"Pesto (ohne Knoblauch, selbst gemacht)",kcal:400,prot:8.0,iron:2.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Knoblauch.",tip:"Fertigpesto enthält fast immer Knoblauch – selbst machen."},
+{name:"Hummus (Fertigprodukt)",kcal:177,prot:7.9,iron:2.4,fodmap:2,substances:["GOS (Kichererbsen)","Fructane (Knoblauch)"],why:"Doppelte FODMAP-Belastung aus Kichererbsen (GOS) und Knoblauch (Fructane).",tip:"Meiden. Selbst hergestellter Hummus in sehr kleinen Mengen (2 EL) evtl. ok."},
+{name:"Tahini-Sauce (Sesam pur)",kcal:595,prot:17,iron:9.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich. Gut als Dressing."},
+{name:"Kokosaminos (Würzsauce)",kcal:55,prot:1.0,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute Sojasauce-Alternative."},
+{name:"Tamari (glutenfreie Sojasauce)",kcal:60,prot:10,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gute Sojasauce-Alternative."},
+{name:"Hoisin-Sauce",kcal:220,prot:3.5,iron:1.5,fodmap:2,substances:["Fructose","Fructane (Knoblauch)"],why:"Enthält hohe Fructose- und Knoblauchmengen.",tip:"Meiden."},
+{name:"Currysauce (selbst, ohne Zwiebel)",kcal:120,prot:3.0,iron:1.8,fodmap:1,substances:["Fructane (Gewürze gering)"],why:"Je nach Gewürzen moderate Fructane möglich.",tip:"Selbst herstellen ohne Zwiebeln und Knoblauch."},
+{name:"Sambal Oelek (ohne Knoblauch)",kcal:35,prot:1.0,iron:0.5,fodmap:0,substances:[],why:"Reine Chilisauce ohne FODMAP. Auf Knoblauchanteil achten.",tip:"Variante ohne Knoblauch wählen."},
+{name:"Paprikapulver (edelsüß)",kcal:282,prot:14,iron:21,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Chilipulver (rein)",kcal:282,prot:13,iron:17,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Capsaicin kann Darm reizen – individuell testen."},
+{name:"Schwarzer Pfeffer (gemahlen)",kcal:251,prot:10,iron:9.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Meersalz",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Hefeflocken (Nährhefe)",kcal:325,prot:50,iron:5.0,fodmap:0,substances:[],why:"Inaktivierte Hefe enthält keine aktiven Verbindungen zur FODMAP-Fermentation.",tip:"Gut verträglich. Reich an B-Vitaminen."},
+
+// ── MEHR SÜSSES & BACKWAREN ──
+{name:"Reispudding (mit laktosefreier Milch)",kcal:115,prot:3.5,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei richtiger Zubereitung.",tip:"Unbegrenzt geeignet."},
+{name:"Panna Cotta (laktosefrei)",kcal:210,prot:3.8,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil mit laktosefreier Sahne.",tip:"Gut geeignet."},
+{name:"Dunkle Schokolade (90%+)",kcal:616,prot:14,iron:14.0,fodmap:1,substances:["GOS (gering)"],why:"Hoher Kakaoanteil = mehr GOS. In kleinen Mengen oft verträglich.",tip:"Bis 20g meist ok. Sehr eisenreich."},
+{name:"Carobpulver (Johannisbrot)",kcal:222,prot:4.6,iron:2.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Natürliche Kakao-Alternative.",tip:"Gut verträglich."},
+{name:"Kokosmehl",kcal:400,prot:18,iron:4.4,fodmap:1,substances:["GOS (gering)"],why:"Enthält geringe GOS-Mengen aus Kokosfleisch.",tip:"In kleinen Backmengen meist verträglich."},
+{name:"Reissirupswaffeln",kcal:410,prot:5.0,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut als Snack."},
+{name:"Maronenpüree (ungesüßt)",kcal:170,prot:3.0,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Maronen / Esskastanien (gegart)",kcal:213,prot:2.9,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Ingwergebäck (glutenfrei, ohne Honig)",kcal:420,prot:4.5,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei richtiger Zubereitung.",tip:"Rezept sorgfältig prüfen."},
+
+// ── FERMENTIERTE LEBENSMITTEL ──
+{name:"Sauerkraut (naturtrüb, unpasteurisiert)",kcal:19,prot:1.3,iron:1.4,fodmap:0,substances:[],why:"Fermentation reduziert Fructane aus Kohl weitgehend. Probiotisch.",tip:"Sehr darmfreundlich in kleinen Mengen. Langsam einführen."},
+{name:"Kimchi (traditionell)",kcal:15,prot:1.1,iron:0.5,fodmap:2,substances:["Fructane (Chili-Paste, Lauch)"],why:"Traditionelles Kimchi enthält Zwiebeln, Lauch und Knoblauch mit hohem Fructangehalt.",tip:"Kleine Mengen probieren. Kimchi-Varianten ohne Zwiebeln bevorzugen."},
+{name:"Miso-Paste (Shiro/Shinshu)",kcal:206,prot:12,iron:2.9,fodmap:1,substances:["GOS (Soja, reduziert durch Fermentation)"],why:"Fermentation reduziert GOS erheblich, aber nicht vollständig.",tip:"In kleinen Mengen (1–2 TL) meist gut verträglich."},
+{name:"Natto (fermentierte Sojabohnen)",kcal:212,prot:18,iron:8.6,fodmap:1,substances:["GOS (reduziert)"],why:"Fermentation reduziert GOS stark. Bessere Soja-Option als ungekochte Bohnen.",tip:"Kleine Mengen meist verträglich. Sehr eisenreich."},
+{name:"Kombucha (wenig gezuckert)",kcal:30,prot:0,iron:0.1,fodmap:1,substances:["Fructose (Restgehalt)"],why:"Fermentation reduziert Zuckergehalt, aber Restmengen verbleiben.",tip:"Kleine Mengen (100ml) individuell testen."},
+{name:"Rote-Beete-Saft (naturtrüb)",kcal:40,prot:1.5,iron:0.7,fodmap:1,substances:["Fructane","GOS"],why:"Konzentrierter Rote-Bete-Saft enthält mehr FODMAPs als frische Beete.",tip:"Kleine Mengen (100ml) testen."},
+
+// ── VITAMINPRÄPARATE ALS LEBENSMITTEL ──
+{name:"Bierhefe (Tabletten)",kcal:325,prot:42,iron:18,fodmap:0,substances:[],why:"Inaktivierte Hefe ohne FODMAP-Wirkung.",tip:"Gut verträglich als Nahrungsergänzung. Reich an B-Vitaminen und Eisen."},
+{name:"Spirulina (Tabletten)",kcal:290,prot:57,iron:28.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Ausgezeichnete Eisenquelle."},
+{name:"Kürbiskernöl",kcal:884,prot:0,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Reich an Vitamin E. Gut verträglich."},
+{name:"Weizenkeimöl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil im Öl (Fructane bleiben im Weizenprotein).",tip:"Unbegrenzt als Öl geeignet."},
+{name:"Schwarzkümmelöl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Kann entzündungshemmend wirken."},
+{name:"Hanföl",kcal:884,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Ausgewogenes Omega-3/6-Verhältnis."},
+
+// ── WEITERE LEBENSMITTEL (ERGÄNZUNG) ──
+{name:"Camembert (cremig gereift)",kcal:310,prot:18,iron:0.4,fodmap:0,substances:[],why:"Reifung baut Laktose ab.",tip:"Gut verträglich."},
+{name:"Manchego",kcal:395,prot:25,iron:0.5,fodmap:0,substances:[],why:"Gereifter Schafskäse, nahezu laktosefrei.",tip:"Gut verträglich."},
+{name:"Pecorino",kcal:387,prot:26,iron:0.6,fodmap:0,substances:[],why:"Gereifter Schafskäse, nahezu laktosefrei.",tip:"Gut verträglich."},
+{name:"Halloumi",kcal:321,prot:23,iron:0.5,fodmap:1,substances:["Laktose (gering)"],why:"Halbgereifter Käse enthält noch geringe Laktosemengen.",tip:"Kleine Mengen meist ok."},
+{name:"Eiscreme (laktosefrei)",kcal:200,prot:3.5,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei laktosefreier Basis.",tip:"Gut geeignet. Auf Fruchtanteile achten."},
+{name:"Sorbet (Erdbeere, ohne Sorbitol)",kcal:120,prot:0.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Sorbitol oder High-Fructose-Sirup.",tip:"Gut geeignet."},
+{name:"Pudding (laktosefrei, Vanille)",kcal:115,prot:3.5,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet."},
+{name:"Mochi (Reiskuchen)",kcal:235,prot:4.0,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Gummibärchen (ohne Fruchtsäfte/Sorbitol)",kcal:343,prot:6.0,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn frei von Sorbitol und Fruchtzucker-Sirup.",tip:"Auf Zutatenliste achten."},
+{name:"Gummibärchen (mit Sorbitol)",kcal:343,prot:6.0,iron:0.1,fodmap:2,substances:["Sorbitol (E420)"],why:"Viele Gummibärchen enthalten Sorbitol als Feuchthaltemittel. Wirkt stark abführend.",tip:"Konsequent meiden. Auf E420 in der Zutatenliste achten."},
+{name:"Kaugummi (zuckerfrei)",kcal:10,prot:0,iron:0,fodmap:2,substances:["Sorbitol (E420)","Xylitol (E967)","Maltitol"],why:"Zuckerfreie Kaugummis enthalten fast ausnahmslos Zuckeralkohole. Schon wenige Stücke können zu Durchfall und Bauchschmerzen führen.",tip:"Konsequent meiden. Normalen Kaugummi mit Zucker oder ganz darauf verzichten."},
+{name:"Lakritze (rein, ohne Zusätze)",kcal:339,prot:4.5,iron:1.7,fodmap:1,substances:["GOS (gering)"],why:"Enthält Lakritzextrakt mit geringen GOS-Mengen.",tip:"Kleine Mengen oft ok."},
+{name:"Marshmallows (plain)",kcal:318,prot:1.8,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Fruchtaromen oder Sorbitol.",tip:"In kleinen Mengen ok."},
+{name:"Waffeln (glutenfrei, selbst gemacht)",kcal:285,prot:5.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei glutenfreier Zubereitung.",tip:"Mit Reismehl und laktosefreier Milch zubereiten."},
+{name:"Pfannkuchen (glutenfrei)",kcal:230,prot:6.0,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei glutenfreier Zubereitung.",tip:"Mit Reismehl oder Buchweizenmehl und laktosefreier Milch."},
+{name:"Reisfladen (indisch, Idli-Art)",kcal:118,prot:3.5,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Sushireis (gewürzt)",kcal:168,prot:3.0,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Getreidekaffee (glutenfrei, Mais-Basis)",kcal:20,prot:0.5,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Guter Kaffeeersatz."},
+{name:"Zichorien-Kaffeeersatz",kcal:22,prot:0.4,iron:0.4,fodmap:2,substances:["Inulin"],why:"Zichorie ist extrem inulinreich. Selbst als Getränk werden relevante Inulinmengen aufgenommen.",tip:"Konsequent meiden – trotz 'gesundem' Image."},
+{name:"Matcha (Pulver)",kcal:328,prot:30,iron:17,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich als Gewürzpulver."},
+{name:"Kakao (Trinkschokolade, mit laktosefreier Milch)",kcal:75,prot:4.0,iron:0.6,fodmap:1,substances:["GOS (Kakao, gering)"],why:"Geringe GOS aus Kakaopulver.",tip:"Kleine Mengen meist ok."},
+{name:"Apfelmus (ohne Süßungsmittel)",kcal:52,prot:0.2,iron:0.1,fodmap:2,substances:["Fructose (excess)","Sorbitol"],why:"Konzentriert alle FODMAP-Substanzen des Apfels.",tip:"Meiden."},
+{name:"Birnenkompott (Dose, ohne Sorbitol)",kcal:52,prot:0.2,iron:0.1,fodmap:2,substances:["Sorbitol","Fructose"],why:"Konzentrierte Birnen-FODMAPs.",tip:"Meiden."},
+{name:"Kürbismus (ohne Zwiebeln)",kcal:26,prot:1.0,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch.",tip:"Gut verträglich."},
+{name:"Tomatensauce (ohne Zwiebeln/Knoblauch)",kcal:50,prot:2.0,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch.",tip:"Selbst kochen – Fertigsaucen fast immer mit Zwiebeln."},
+{name:"Bolognese (hausgemacht, FODMAP-freundlich)",kcal:180,prot:15,iron:2.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn mit Knoblauchöl und ohne Zwiebeln/Knoblauch zubereitet.",tip:"Knoblauchöl statt Knoblauch, Frühlingszwiebelgrün statt Zwiebeln."},
+{name:"Gazpacho (ohne Zwiebeln/Knoblauch)",kcal:55,prot:1.5,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil in FODMAP-freundlicher Variante.",tip:"Rezept anpassen: Knoblauch und Zwiebeln weglassen."},
+{name:"Gemüsebrühe (FODMAP-freundlich, ohne Zwiebeln)",kcal:10,prot:0.5,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch.",tip:"Fertige Brühen fast immer mit Zwiebeln – selbst kochen oder spezielle FODMAP-Brühen kaufen."},
+{name:"Hühnerbrühe (selbst gekocht, ohne Zwiebeln)",kcal:15,prot:2.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich. Sehr darmfreundlich."},
+{name:"Rinderbrühe (selbst, ohne Zwiebeln)",kcal:20,prot:4.0,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Kokosnusswasser (pur)",kcal:19,prot:0.7,iron:0.3,fodmap:1,substances:["Sorbitol (gering)"],why:"Enthält geringe Sorbitolmengen.",tip:"Bis 100ml meist ok."},
+{name:"Mandelmilch (gesüßt)",kcal:40,prot:0.5,iron:0.3,fodmap:1,substances:["Fructose (Zuckerzusatz)"],why:"Zuckerzusatz erhöht Fructosegehalt leicht.",tip:"Ungesüßte Variante bevorzugen."},
+{name:"Hanfdrink (ungesüßt)",kcal:35,prot:2.0,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Erbsendrink (ungesüßt)",kcal:45,prot:3.5,iron:0.4,fodmap:1,substances:["GOS (Erbse, gering)"],why:"Geringe GOS-Mengen aus Erbsenprotein.",tip:"Kleine Mengen meist ok."},
+{name:"Lupinendrink",kcal:35,prot:3.0,iron:0.5,fodmap:2,substances:["GOS","Fructane"],why:"Lupinen sind Hülsenfrüchte mit hohem GOS-Gehalt – auch als Drink FODMAP-belastet.",tip:"Meiden."},
+{name:"Rosskastanienmehl",kcal:230,prot:2.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Erdmandeln / Chufa",kcal:434,prot:5.4,iron:6.2,fodmap:1,substances:["GOS (moderat)"],why:"Enthält moderate GOS-Mengen.",tip:"Kleine Mengen (bis 75g) oft ok. Sehr eisenreich."},
+{name:"Wasabi-Erbsen (Fertigsnack)",kcal:380,prot:17,iron:4.5,fodmap:2,substances:["GOS (Erbse)","Fructane (Weizen/Reiswürze)"],why:"Doppelte FODMAP-Belastung aus Erbsen und Weizenmehl-Panade.",tip:"Meiden."},
+{name:"Reischips (ungewürzt)",kcal:380,prot:6.5,iron:0.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Guter Snack."},
+{name:"Maischips (Tortilla Chips, ungewürzt)",kcal:490,prot:6.5,iron:1.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet. Auf Würzmischungen achten."},
+{name:"Kartoffelchips (plain, gesalzen)",kcal:536,prot:7.0,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil bei reinen Chips.",tip:"Auf Gewürzmischungen achten – BBQ/Käse-Sorten enthalten oft Zwiebelpulver."},
+{name:"Reisnudeln (Glasnudeln)",kcal:351,prot:0.1,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Konjak-Nudeln (Shirataki)",kcal:9,prot:0.1,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr gut verträglich, kalorienarm."},
+{name:"Zoodles (Zucchini-Nudeln)",kcal:17,prot:1.2,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Perfekte Nudelersatz-Option."},
+{name:"Kürbisnudeln (frisch)",kcal:30,prot:1.5,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Gemüsepüree (Zucchini, ohne Zwiebeln)",kcal:25,prot:1.5,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Möhrenreis (geriebene Karotte)",kcal:41,prot:0.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich als Reisersatz."},
+{name:"Blumenkohlreis (gedünstet)",kcal:25,prot:1.9,iron:0.4,fodmap:2,substances:["Mannitol"],why:"Auch als 'Reis' behält Blumenkohl seinen hohen Mannitol-Gehalt.",tip:"Meiden. Zucchini- oder Möhrenreis bevorzugen."},
+{name:"Kürbiskernprotein (Pulver)",kcal:350,prot:55,iron:12,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Sehr eisenreich als Proteinquelle."},
+{name:"Sonnenblumenprotein (Pulver)",kcal:330,prot:50,iron:6.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Leinprotein (Pulver)",kcal:345,prot:35,iron:8.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Eisenreich und gut verträglich."},
+{name:"Amaranthmehl",kcal:375,prot:14,iron:7.4,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Sehr eisenreich."},
+{name:"Teffmehl",kcal:365,prot:13,iron:8.7,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Sehr eisenreich. Ideal zum Backen."},
+{name:"Sorghummehl",kcal:359,prot:11,iron:4.4,fodmap:0,substances:[],why:"Glutenfrei, kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Maisstärke",kcal:381,prot:0.3,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gutes Bindemittel."},
+{name:"Guarkernmehl (E412)",kcal:217,prot:5.7,iron:2.5,fodmap:2,substances:["GOS"],why:"Guarkernmehl enthält hohe GOS-Mengen und fermentiert stark im Darm.",tip:"Meiden als Zutat. Psyllium oder Agar bevorzugen."},
+{name:"Xanthan (E415)",kcal:318,prot:7.4,iron:8.8,fodmap:2,substances:["Fermentationsprodukt"],why:"Xanthan ist ein bakterielles Fermentationsprodukt das den Darm stark reizen kann.",tip:"In kleinen Mengen (≤1g) meist ok. Bei Empfindlichkeit meiden."},
+{name:"Stevia-Extrakt (Tabletten)",kcal:0,prot:0,iron:0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut verträglich."},
+{name:"Erythritol (E968)",kcal:20,prot:0,iron:0,fodmap:0,substances:[],why:"Zuckeralkohol der in sehr geringen Mengen im Körper vorkommt und anders metabolisiert wird als Sorbitol.",tip:"Meist gut verträglich bis 30g. Verträglichster Zuckeralkohol."},
+{name:"Kokosblütensirup",kcal:295,prot:0.5,iron:0.4,fodmap:1,substances:["Inulin (gering)"],why:"Enthält geringe Inulinmengen.",tip:"In kleinen Mengen ok."},
+
+// ── EIER (ALLE ZUBEREITUNGSARTEN) ──
+{name:"Ei (gekocht, hart)",kcal:155,prot:13,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Vollständiges Protein, gute Eisenquelle.",tip:"Unbegrenzt geeignet."},
+{name:"Ei (weich gekocht)",kcal:143,prot:12,iron:1.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ei (Spiegelei, in Butter)",kcal:196,prot:14,iron:1.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ei (Rührei, ohne Milch)",kcal:182,prot:13,iron:1.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet. Mit laktosefreier Milch oder Wasser statt Kuhmilch."},
+{name:"Ei (Rührei, mit laktosefreier Milch)",kcal:165,prot:12,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ei (pochiert)",kcal:143,prot:12,iron:1.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ei (Omelett, pur)",kcal:170,prot:13,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Füllung ohne Zwiebeln/Pilze wählen."},
+{name:"Ei (Omelett, mit Spinat & Feta)",kcal:195,prot:15,iron:2.5,fodmap:0,substances:[],why:"Alle Zutaten low FODMAP.",tip:"Sehr reizdarm-freundliche Mahlzeit."},
+{name:"Ei (Omelett, mit Champignons)",kcal:175,prot:14,iron:1.9,fodmap:2,substances:["Mannitol (Champignons)"],why:"Champignons enthalten hohe Mannitolmengen, die auch in der Füllung wirksam bleiben.",tip:"Austernpilze als Ersatz verwenden."},
+{name:"Ei (Baked Egg / im Ofen)",kcal:155,prot:13,iron:1.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Rührei (Fertigkeit, 2 Eier)",kcal:364,prot:26,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Mahlzeitgröße, nicht auf 100g bezogen."},
+{name:"Eiweiß (roh / pasteurisiert)",kcal:52,prot:11,iron:0.1,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Eigelb (roh)",kcal:322,prot:16,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Gut geeignet. Reich an Vitamin D und Eisen."},
+{name:"Wachtelei (gekocht)",kcal:158,prot:13,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Unbegrenzt geeignet."},
+{name:"Entenei (gekocht)",kcal:185,prot:13,iron:3.8,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Sehr eisenreich.",tip:"Gut verträglich."},
+
+// ── GEGRILLTES / GEGARTE GERICHTE ──
+{name:"Hähnchen (gegrillt, ohne Marinade)",kcal:165,prot:31,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Grillen verändert den FODMAP-Status nicht.",tip:"Unbegrenzt geeignet. Auf marinierte Varianten verzichten."},
+{name:"Hähnchen (gegrillt, Zitronenkräuter)",kcal:170,prot:31,iron:1.1,fodmap:0,substances:[],why:"Zitrone und Kräuter enthalten keine FODMAPs.",tip:"Unbegrenzt geeignet."},
+{name:"Hähnchen (gegrillt, Knoblauch-Marinade)",kcal:178,prot:30,iron:1.1,fodmap:2,substances:["Fructane (Knoblauch)"],why:"Knoblauch in Marinade – Fructane penetrieren das Fleisch beim Marinieren.",tip:"Knoblauchöl statt Knoblauch verwenden."},
+{name:"Rindersteack (gegrillt, medium)",kcal:271,prot:26,iron:2.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Grillen hat keinen Einfluss auf FODMAPs.",tip:"Unbegrenzt geeignet."},
+{name:"Rindersteak (Filet, gegrillt)",kcal:250,prot:28,iron:2.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Lammkotelett (gegrillt)",kcal:294,prot:25,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Schweinebauch (gegrillt)",kcal:518,prot:14,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Fettreich – in Maßen konsumieren."},
+{name:"Schweinekotelett (gegrillt)",kcal:172,prot:22,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Bratwurst (gegrillt, ohne Würzmischung)",kcal:301,prot:14,iron:1.0,fodmap:0,substances:[],why:"Pures Fleisch ohne FODMAP-Zusätze.",tip:"Fertig-Bratwürste immer auf Zwiebel-/Knoblauchpulver prüfen."},
+{name:"Lachs (gegrillt / gebraten)",kcal:208,prot:20,iron:0.9,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Garnelen (gegrillt)",kcal:99,prot:21,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Tintenfisch (gegrillt)",kcal:92,prot:16,iron:0.7,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Forelle (gegrillt)",kcal:151,prot:23,iron:0.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kabeljau (gegrillt)",kcal:82,prot:18,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Halloumi (gegrillt)",kcal:321,prot:23,iron:0.5,fodmap:1,substances:["Laktose (gering)"],why:"Grillen verändert Laktosegehalt kaum.",tip:"Kleine Portionen meist gut verträglich."},
+{name:"Tofu (gegrillt / gebraten)",kcal:144,prot:15,iron:3.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Fester Tofu pur.",tip:"Unbegrenzt geeignet."},
+{name:"Tempeh (gegrillt)",kcal:193,prot:19,iron:2.7,fodmap:0,substances:[],why:"Fermentiert und gegrillt – kein FODMAP.",tip:"Gut verträglich."},
+{name:"Paprika (gegrillt)",kcal:31,prot:1.0,iron:0.4,fodmap:0,substances:[],why:"Grillen verändert FODMAP-Status bei Paprika nicht.",tip:"Unbegrenzt geeignet."},
+{name:"Zucchini (gegrillt)",kcal:17,prot:1.2,iron:0.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Aubergine (gegrillt)",kcal:25,prot:1.0,iron:0.2,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Spargel (gegrillt, grün)",kcal:20,prot:2.2,iron:2.1,fodmap:1,substances:["Fructane"],why:"Grillen reduziert Fructangehalt kaum.",tip:"Bis 2–3 Stangen meist verträglich."},
+{name:"Kartoffeln (gegrillt / Folie)",kcal:93,prot:2.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Maiskolben (gegrillt)",kcal:96,prot:3.4,iron:0.5,fodmap:1,substances:["Fructane"],why:"Moderate Fructanbelastung auch nach dem Grillen.",tip:"Bis ½ Kolben meist verträglich."},
+{name:"Pilze (Austernpilze, gegrillt)",kcal:33,prot:3.3,iron:1.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Bester Pilz zum Grillen bei Reizdarm."},
+{name:"Champignons (gegrillt)",kcal:22,prot:3.1,iron:0.5,fodmap:2,substances:["Mannitol"],why:"Mannitol bleibt beim Grillen vollständig erhalten.",tip:"Austernpilze bevorzugen."},
+{name:"Tomaten (gegrillt / Ofentomate)",kcal:18,prot:0.9,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Kürbis (gegrillt, Hokkaido)",kcal:40,prot:1.4,iron:0.6,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Unbegrenzt geeignet."},
+{name:"Ananas (gegrillt)",kcal:50,prot:0.5,iron:0.3,fodmap:0,substances:[],why:"Kein FODMAP-Anteil. Grillen karamellisiert Zucker ohne FODMAP-Einfluss.",tip:"Gut geeignet als Dessert."},
+{name:"Pfirsich (gegrillt)",kcal:39,prot:0.9,iron:0.3,fodmap:2,substances:["Sorbitol","Fructose"],why:"Grillen verändert Sorbitol- und Fructosegehalt nicht.",tip:"Meiden."},
+{name:"Banane (gegrillt / karamellisiert)",kcal:89,prot:1.1,iron:0.3,fodmap:2,substances:["Fructose"],why:"Reife Banane bleibt high FODMAP auch nach dem Grillen.",tip:"Unreife Banane verwenden, aber in kleiner Menge."},
+{name:"Hähnchen-Spieß (gegrillt, Kräuter)",kcal:165,prot:31,iron:1.0,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch mariniert.",tip:"Kräuter (Rosmarin, Thymian, Zitrone) sind alle low FODMAP."},
+{name:"Gemüsespieß (gegrillt, FODMAP-freundlich)",kcal:30,prot:1.5,iron:0.5,fodmap:0,substances:[],why:"Zucchini, Paprika, Tomate – alle low FODMAP.",tip:"Auf Champignons und Zwiebeln in der Zusammenstellung verzichten."},
+{name:"Pulled Pork (ohne Zwiebeln, selbst)",kcal:245,prot:28,iron:1.5,fodmap:0,substances:[],why:"Kein FODMAP-Anteil wenn ohne Zwiebeln/Knoblauch-Rub.",tip:"BBQ-Sauce prüfen – fast alle Fertigsaucen enthalten Zwiebeln."},
+{name:"Burger-Patty (Rind, gegrillt, pur)",kcal:254,prot:22,iron:2.4,fodmap:0,substances:[],why:"Kein FODMAP-Anteil.",tip:"Glutenfreies Brötchen verwenden. Auf Sauce und Zwiebeln achten."},
+{name:"Falafel (selbst, ohne Zwiebeln)",kcal:333,prot:13,iron:3.4,fodmap:2,substances:["GOS (Kichererbsen)"],why:"Kichererbsen enthalten hohe GOS-Mengen auch nach dem Backen.",tip:"In kleinen Mengen (2 Stück) probieren."},
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+function getGoals(){try{const g=JSON.parse(localStorage.getItem('nl_goals')||'{}');return{kcal:g.kcal||2000,prot:g.prot||60,iron:g.iron||14};}catch{return{kcal:2000,prot:60,iron:14};}}
+let GOALS=getGoals();
+let selectedFood=null;
+let weekOffset=0;
+
+function getTodayKey(){return new Date().toISOString().slice(0,10);}
+function getLog(){try{return JSON.parse(localStorage.getItem('nl_log')||'{}');}catch{return {};}}
+function saveLog(log){localStorage.setItem('nl_log',JSON.stringify(log));}
+function getTodayEntries(){const log=getLog();return log[getTodayKey()]||[];}
+function addToLog(entry){const log=getLog();const key=getTodayKey();if(!log[key])log[key]=[];log[key].push(entry);saveLog(log);}
+function deleteEntry(key,idx){const log=getLog();if(log[key]){log[key].splice(idx,1);saveLog(log);}renderToday();renderWeek();}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function loadSettingsUI(){const g=getGoals();document.getElementById('set-kcal').value=g.kcal;document.getElementById('set-prot').value=g.prot;document.getElementById('set-iron').value=g.iron;}
+function saveSettings(){const g={kcal:parseInt(document.getElementById('set-kcal').value)||2000,prot:parseInt(document.getElementById('set-prot').value)||60,iron:parseFloat(document.getElementById('set-iron').value)||14};localStorage.setItem('nl_goals',JSON.stringify(g));GOALS=g;const s=document.getElementById('settings-saved');s.style.display='inline';setTimeout(()=>s.style.display='none',2000);renderToday();renderWeek();}
+function exportData(){const blob=new Blob([JSON.stringify({goals:GOALS,log:getLog()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='naehrstoff-export.json';a.click();}
+function clearAllData(){if(confirm('Alle Daten unwiderruflich löschen?')){localStorage.removeItem('nl_log');renderToday();renderWeek();}}
+function onSearch(q){
+  const box=document.getElementById('searchResults');
+  if(!q||q.length<1){box.style.display='none';return;}
+  const ql=q.toLowerCase();
+  const res=FOODS.filter(f=>f.name.toLowerCase().includes(ql)).slice(0,10);
+  if(!res.length){box.style.display='none';return;}
+  box.innerHTML=res.map(f=>`
+    <div class="result-item" onclick="selectFood(${FOODS.indexOf(f)})">
+      <div class="result-name">${f.name}</div>
+      <div class="result-meta">${f.kcal} kcal · ${f.prot}g Protein · ${f.iron}mg Fe · ${['Low FODMAP','Moderat FODMAP','High FODMAP'][f.fodmap]}</div>
+    </div>`).join('');
+  box.style.display='block';
+}
+
+function selectFood(idx){
+  selectedFood=FOODS[idx];
+  document.getElementById('foodSearch').value=selectedFood.name;
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('selectedFoodArea').style.display='block';
+  const badge=document.getElementById('fodmapBadge');
+  badge.className='badge '+['badge-green','badge-orange','badge-red'][selectedFood.fodmap];
+  badge.textContent=['Low FODMAP','Moderat','High FODMAP'][selectedFood.fodmap];
+  document.getElementById('selectedFoodName').textContent=selectedFood.name;
+  updatePreview();
+}
+
+function buildFodmapPanel(food){
+  const lvl=food.fodmap;
+  const headerCls=['fodmap-header-ok','fodmap-header-warn','fodmap-header-bad'][lvl];
+  const icon=['✓','△','✕'][lvl];
+  const title=['Low FODMAP – Reizdarm-freundlich','Moderat FODMAP – Auf Menge achten','High FODMAP – Reizauslöser möglich'][lvl];
+  const tipCls=['fodmap-tip-ok','fodmap-tip-warn','fodmap-tip-bad'][lvl];
+
+  let substHTML='';
+  if(food.substances.length>0){
+    substHTML=`<div class="fodmap-substances">${food.substances.map(s=>`<span class="substance-tag">${s}</span>`).join('')}</div>`;
+  }
+
+  return `<div class="fodmap-panel">
+    <div class="fodmap-header ${headerCls}">${icon} <strong>${title}</strong></div>
+    <div class="fodmap-body">
+      ${food.substances.length>0?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Enthaltene FODMAP-Substanzen</div>${substHTML}`:'<div style="font-size:13px;color:var(--accent);margin-bottom:8px;">Keine FODMAP-Substanzen nachweisbar.</div>'}
+      <div class="fodmap-why">${food.why}</div>
+      <div class="fodmap-tip ${tipCls}">${food.tip}</div>
+    </div>
+  </div>`;
+}
+
+function updatePreview(){
+  if(!selectedFood)return;
+  const amount=parseFloat(document.getElementById('amount').value)||0;
+  const factor=amount/100;
+  document.getElementById('prevKcal').innerHTML=Math.round(selectedFood.kcal*factor)+'<span class="stat-unit">kcal</span>';
+  document.getElementById('prevProt').innerHTML=Math.round(selectedFood.prot*factor*10)/10+'<span class="stat-unit">g</span>';
+  document.getElementById('prevIron').innerHTML=Math.round(selectedFood.iron*factor*10)/10+'<span class="stat-unit">mg</span>';
+  const panel=document.getElementById('fodmapPanel');
+  panel.style.display='block';
+  panel.innerHTML=buildFodmapPanel(selectedFood);
+}
+
+function clearSelection(){
+  selectedFood=null;
+  document.getElementById('foodSearch').value='';
+  document.getElementById('selectedFoodArea').style.display='none';
+}
+
+function addEntry(){
+  if(!selectedFood)return;
+  const amount=parseFloat(document.getElementById('amount').value)||100;
+  const unit=document.getElementById('unit').value;
+  const meal=document.getElementById('mealType').value;
+  const factor=amount/100;
+  addToLog({name:selectedFood.name,meal,amount,unit,kcal:Math.round(selectedFood.kcal*factor),prot:Math.round(selectedFood.prot*factor*10)/10,iron:Math.round(selectedFood.iron*factor*10)/10,fodmap:selectedFood.fodmap,time:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})});
+  clearSelection();renderToday();renderWeek();showPage('today');
+}
+
+// ─── TODAY ────────────────────────────────────────────────────────────────────
+function renderToday(){
+  const entries=getTodayEntries();
+  const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,prot:a.prot+e.prot,iron:a.iron+e.iron}),{kcal:0,prot:0,iron:0});
+  document.getElementById('todayDate').textContent=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('todayKcal').innerHTML=Math.round(totals.kcal)+'<span class="stat-unit">kcal</span>';
+  document.getElementById('todayProt').innerHTML=Math.round(totals.prot*10)/10+'<span class="stat-unit">g</span>';
+  document.getElementById('todayIron').innerHTML=Math.round(totals.iron*10)/10+'<span class="stat-unit">mg</span>';
+  document.getElementById('kcalGoalText').textContent=Math.round(totals.kcal)+' / '+GOALS.kcal+' kcal';
+  document.getElementById('protGoalText').textContent=Math.round(totals.prot*10)/10+' / '+GOALS.prot+'g';
+  document.getElementById('ironGoalText').textContent=Math.round(totals.iron*10)/10+' / '+GOALS.iron+'mg';
+  document.getElementById('kcalBar').style.width=Math.min(100,totals.kcal/GOALS.kcal*100)+'%';
+  document.getElementById('protBar').style.width=Math.min(100,totals.prot/GOALS.prot*100)+'%';
+  document.getElementById('ironBar').style.width=Math.min(100,totals.iron/GOALS.iron*100)+'%';
+  const log=document.getElementById('todayLog');
+  if(!entries.length){log.innerHTML='<div class="empty">Noch keine Einträge heute.</div>';return;}
+  const meals={};
+  entries.forEach((e,i)=>{if(!meals[e.meal])meals[e.meal]=[];meals[e.meal].push({...e,idx:i});});
+  log.innerHTML=Object.entries(meals).map(([meal,items])=>`
+    <div class="meal-section card">
+      <div class="meal-header">${meal}</div>
+      ${items.map(e=>`
+        <div class="log-item">
+          <div style="flex:1;">
+            <div class="log-name">${e.name}</div>
+            <div class="log-meta">${e.amount}${e.unit} · ${e.time} · <span style="color:${['var(--accent)','var(--warn)','var(--danger)'][e.fodmap]}">${['Low','Moderat','High'][e.fodmap]} FODMAP</span></div>
+          </div>
+          <div class="log-nums">
+            <span class="kcal">${e.kcal} kcal</span>
+            <span style="color:var(--muted);">${e.prot}g · ${e.iron}mg Fe</span>
+          </div>
+          <button class="del-btn" onclick="deleteEntry('${getTodayKey()}',${e.idx})" title="Löschen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ─── WEEK ─────────────────────────────────────────────────────────────────────
+function renderWeek(){
+  const log=getLog();
+  const monday=getMondayForOffset(weekOffset);
+  const todayKey=getTodayKey();
+  const isCurrentWeek=weekOffset===0;
+  document.getElementById('weekRange').textContent=monday.toLocaleDateString('de-DE',{day:'numeric',month:'long'})+' – '+new Date(monday.getTime()+6*86400000).toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'});
+  const nextBtn=document.getElementById('weekNextBtn');
+  const todayBtn=document.getElementById('weekTodayBtn');
+  if(nextBtn){nextBtn.style.opacity=isCurrentWeek?'0.3':'1';nextBtn.disabled=isCurrentWeek;}
+  if(todayBtn){todayBtn.style.display=isCurrentWeek?'none':'inline-flex';}
+  const days=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  let grid='',rows='',totalKcal=0,totalProt=0,totalIron=0,activeDays=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(monday.getTime()+i*86400000);
+    const key=d.toISOString().slice(0,10);
+    const entries=log[key]||[];
+    const t=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,prot:a.prot+e.prot,iron:a.iron+e.iron}),{kcal:0,prot:0,iron:0});
+    const isToday=key===todayKey;
+    const pct=Math.min(100,t.kcal/GOALS.kcal*100);
+    if(t.kcal>0){totalKcal+=t.kcal;totalProt+=t.prot;totalIron+=t.iron;activeDays++;}
+    let fodmapSummary='–';
+    if(entries.length){const worst=Math.max(...entries.map(e=>e.fodmap));fodmapSummary=`<span class="badge ${['badge-green','badge-orange','badge-red'][worst]}">${['Low','Moderat','High'][worst]}</span>`;}
+    grid+=`<div class="day-card${isToday?' today':''}"><div class="day-name">${days[i]}</div><div class="day-kcal">${t.kcal?Math.round(t.kcal):'–'}</div><div class="day-bar"><div class="day-bar-fill" style="width:${pct}%"></div></div></div>`;
+    rows+=`<tr><td>${days[i]} ${d.toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})}</td><td>${t.kcal?Math.round(t.kcal):'–'}</td><td>${t.prot?Math.round(t.prot*10)/10+'g':'–'}</td><td>${t.iron?Math.round(t.iron*10)/10+'mg':'–'}</td><td>${fodmapSummary}</td></tr>`;
+  }
+  document.getElementById('weekGrid').innerHTML=grid;
+  document.getElementById('weekTableBody').innerHTML=rows;
+  if(activeDays>0){document.getElementById('avgKcal').innerHTML=Math.round(totalKcal/activeDays)+'<span class="stat-unit">kcal</span>';document.getElementById('avgProt').innerHTML=Math.round(totalProt/activeDays*10)/10+'<span class="stat-unit">g</span>';document.getElementById('avgIron').innerHTML=Math.round(totalIron/activeDays*10)/10+'<span class="stat-unit">mg</span>';}
+  else{document.getElementById('avgKcal').innerHTML='–';document.getElementById('avgProt').innerHTML='–';document.getElementById('avgIron').innerHTML='–';}
+}
+
+// ─── WEEK NAV ─────────────────────────────────────────────────────────────────
+function changeWeek(delta){weekOffset+=delta;renderWeek();}
+function getMondayForOffset(offset){const today=new Date();const dow=today.getDay();const monday=new Date(today);monday.setDate(today.getDate()-((dow+6)%7)+offset*7);monday.setHours(0,0,0,0);return monday;}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const idx={add:0,today:1,week:2,settings:3}[id];
+  if(idx!==undefined)document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(id==='today')renderToday();
+  if(id==='week'){weekOffset=0;renderWeek();}
+  if(id==='settings')loadSettingsUI();
+}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('searchResults').style.display='none';});
+renderToday();renderWeek();
+</script>
+</body>
+</html>
