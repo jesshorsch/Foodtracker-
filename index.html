@@ -382,6 +382,22 @@
         <span class="badge badge-red">✕ High FODMAP</span>
       </div>
     </div>
+
+    <div class="card card-sm" style="margin-top:0.5rem;">
+      <div style="font-size:13px; color:var(--muted); margin-bottom:0.75rem;">Daten übertragen</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportieren
+        </button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10" transform="rotate(180 12 12)"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importieren
+          <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+        </label>
+      </div>
+      <div id="importMsg" style="font-size:12px; margin-top:8px; display:none;"></div>
+    </div>
   </div>
 
   <!-- PAGE: TODAY -->
@@ -958,6 +974,54 @@ function showPage(id) {
   document.querySelectorAll('.nav-btn')[{ add: 0, today: 1, week: 2 }[id]].classList.add('active');
   if (id === 'today') renderToday();
   if (id === 'week') renderWeek();
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function exportData() {
+  const log = getLog();
+  const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'naehrstoff-log-' + getTodayKey() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const msg = document.getElementById('importMsg');
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (typeof imported !== 'object' || Array.isArray(imported)) throw new Error();
+      const existing = getLog();
+      // Merge: imported days are added, existing entries on same day are kept
+      for (const [key, entries] of Object.entries(imported)) {
+        if (!existing[key]) existing[key] = [];
+        // Avoid exact duplicates (same name+meal+time)
+        for (const entry of entries) {
+          const isDupe = existing[key].some(e => e.name === entry.name && e.meal === entry.meal && e.time === entry.time);
+          if (!isDupe) existing[key].push(entry);
+        }
+      }
+      saveLog(existing);
+      renderToday();
+      renderWeek();
+      const days = Object.keys(imported).length;
+      msg.style.display = 'block';
+      msg.style.color = 'var(--accent)';
+      msg.textContent = `✓ ${days} Tag${days !== 1 ? 'e' : ''} erfolgreich importiert.`;
+    } catch {
+      msg.style.display = 'block';
+      msg.style.color = 'var(--danger)';
+      msg.textContent = '✕ Ungültige Datei. Bitte eine exportierte JSON-Datei wählen.';
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // Close dropdown on outside click
