@@ -531,6 +531,41 @@
 </main>
 </div>
 
+<!-- EDIT ENTRY MODAL -->
+<div id="editModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:flex-end; justify-content:center;">
+  <div style="background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:1.5rem; width:100%; max-width:480px; padding-bottom:calc(1.5rem + env(safe-area-inset-bottom));">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+      <h2 style="margin:0;">Eintrag bearbeiten</h2>
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);">✕</button>
+    </div>
+    <div id="editFoodName" style="font-size:13px; color:var(--muted); margin-bottom:1.25rem;"></div>
+    <div class="field">
+      <label>Mahlzeit</label>
+      <select id="editMeal">
+        <option value="Frühstück">Frühstück</option>
+        <option value="Mittagessen">Mittagessen</option>
+        <option value="Abendessen">Abendessen</option>
+        <option value="Snack">Snack</option>
+      </select>
+    </div>
+    <div class="input-row field">
+      <div>
+        <label>Menge</label>
+        <input type="number" id="editAmount" min="1">
+      </div>
+      <div>
+        <label>Einheit</label>
+        <select id="editUnit">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="Stk">Stk</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="saveEdit()">Speichern</button>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:flex-end; justify-content:center;">
   <div style="background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:1.5rem; width:100%; max-width:480px; padding-bottom:calc(1.5rem + env(safe-area-inset-bottom));">
@@ -808,7 +843,234 @@ const FOODS = [
   { name: "Apfelsaft", kcal: 46, prot: 0.1, iron: 0.1, fodmap: 2, note: "Hoch FODMAP (Fructose, Sorbitol). Vermeiden bei Reizdarm." },
   { name: "Wasser (stilles)", kcal: 0, prot: 0, iron: 0, fodmap: 0, note: "Low FODMAP. Basis der Ernährung." },
   { name: "Kokoswasser", kcal: 19, prot: 0.7, iron: 0.3, fodmap: 1, note: "Moderat FODMAP (Sorbitol). ½ Tasse meist ok." },
+
+  // ── REISWAFFELN & WAFFELN ──
+  { name: "Reiswaffeln (natur)", kcal: 381, prot: 8.2, iron: 1.4, fodmap: 0, note: "Low FODMAP. Klassischer Snack, gut verträglich." },
+  { name: "Reiswaffeln (Schokolade, dunkel)", kcal: 410, prot: 7.0, iron: 3.2, fodmap: 1, note: "Moderat FODMAP. Dunkle Schokolade: ≤20g ok. Eisenreich." },
+  { name: "Reiswaffeln (Schokolade, Vollmilch)", kcal: 415, prot: 6.5, iron: 1.8, fodmap: 2, note: "Hoch FODMAP durch Milchschokolade (Laktose)." },
+  { name: "Reiswaffeln (gesalzen)", kcal: 385, prot: 8.0, iron: 1.4, fodmap: 0, note: "Low FODMAP. Leichter Snack, gut verträglich." },
+  { name: "Reiswaffeln (Karamell)", kcal: 400, prot: 6.8, iron: 1.2, fodmap: 1, note: "Moderat FODMAP je nach Zuckerart. Kleine Mengen meist ok." },
+  { name: "Reiswaffeln (Vollkorn)", kcal: 370, prot: 9.0, iron: 2.0, fodmap: 0, note: "Low FODMAP. Mehr Ballaststoffe als weiße Reiswaffeln." },
+  { name: "Maiswaffeln (natur)", kcal: 360, prot: 7.5, iron: 2.0, fodmap: 0, note: "Low FODMAP. Glutenfreier Snack, gut verträglich." },
+  { name: "Maiswaffeln (Schokolade, dunkel)", kcal: 405, prot: 6.8, iron: 3.0, fodmap: 1, note: "Moderat FODMAP. Gut in kleinen Mengen." },
+  { name: "Maiswaffeln (gesalzen)", kcal: 362, prot: 7.3, iron: 1.9, fodmap: 0, note: "Low FODMAP. Knuspriger Snack." },
+  { name: "Hirsewaffeln", kcal: 355, prot: 9.5, iron: 2.8, fodmap: 0, note: "Low FODMAP. Glutenfrei, ballaststoffreich." },
+  { name: "Dinkelvollkornwaffeln", kcal: 350, prot: 10.0, iron: 3.5, fodmap: 2, note: "Hoch FODMAP (Fructane aus Dinkel)." },
+  { name: "Reiswaffeln (Erdnuss)", kcal: 420, prot: 10.5, iron: 1.6, fodmap: 0, note: "Low FODMAP. Proteinreich, gut verträglich." },
+  { name: "Reiswaffeln (Sesam)", kcal: 390, prot: 9.0, iron: 4.2, fodmap: 0, note: "Low FODMAP. Eisenreich durch Sesam." },
+
+  // ── EI-VARIANTEN ──
+  { name: "Ei (hart gekocht)", kcal: 155, prot: 13, iron: 1.9, fodmap: 0, note: "Low FODMAP. Gute Eisenquelle, sättigend." },
+  { name: "Ei (weich gekocht)", kcal: 155, prot: 13, iron: 1.9, fodmap: 0, note: "Low FODMAP. Nährstoffe bleiben gut erhalten." },
+  { name: "Ei (pochiert)", kcal: 143, prot: 13, iron: 1.8, fodmap: 0, note: "Low FODMAP. Schonend zubereitet, gut verträglich." },
+  { name: "Rührei (mit Butter)", kcal: 185, prot: 12, iron: 1.7, fodmap: 0, note: "Low FODMAP. Sättigend, einfach zubereitet." },
+  { name: "Rührei (ohne Fett)", kcal: 148, prot: 13, iron: 1.8, fodmap: 0, note: "Low FODMAP. Kalorienärmer als mit Butter." },
+  { name: "Spiegelei (mit Öl)", kcal: 196, prot: 13, iron: 1.8, fodmap: 0, note: "Low FODMAP. Klassische Zubereitung." },
+  { name: "Omelette (natur)", kcal: 172, prot: 13, iron: 1.8, fodmap: 0, note: "Low FODMAP. Vielseitig – mit Gemüse ergänzen." },
+  { name: "Omelette (mit Käse)", kcal: 220, prot: 16, iron: 1.5, fodmap: 0, note: "Low FODMAP mit Hartkäse. Feta oder Cheddar verwenden." },
+  { name: "Wachtelei", kcal: 158, prot: 13, iron: 3.7, fodmap: 0, note: "Low FODMAP. Sehr eisenreich – Miniatur-Ei mit großem Nährwert." },
+  { name: "Entenei", kcal: 185, prot: 13, iron: 3.8, fodmap: 0, note: "Low FODMAP. Größer und eisenreicher als Hühnerei." },
+  { name: "Eiweiß (roh)", kcal: 52, prot: 11, iron: 0.1, fodmap: 0, note: "Low FODMAP. Fast kein Fett, sehr proteinreich." },
+  { name: "Eigelb (roh)", kcal: 322, prot: 16, iron: 5.5, fodmap: 0, note: "Low FODMAP. Ausgezeichnete Eisenquelle, viele Vitamine." },
+  { name: "Rührei (mit Gemüse)", kcal: 160, prot: 12, iron: 2.0, fodmap: 0, note: "Low FODMAP mit Paprika, Spinat, Tomate." },
+  { name: "Pfannkuchen (glutenfrei)", kcal: 195, prot: 6.5, iron: 1.0, fodmap: 0, note: "Low FODMAP mit Reismehl und Eiern." },
+  { name: "Pfannkuchen (Weizen)", kcal: 220, prot: 7.0, iron: 1.2, fodmap: 2, note: "Hoch FODMAP (Weizenmehl-Fructane)." },
+
+  // ── FRÜHSTÜCK & MÜSLI ──
+  { name: "Granola (zuckerfrei)", kcal: 450, prot: 12, iron: 3.5, fodmap: 1, note: "Moderat FODMAP durch Haferflocken. Kleine Mengen meist ok." },
+  { name: "Puffweizen", kcal: 357, prot: 11, iron: 3.5, fodmap: 2, note: "Hoch FODMAP (Fructane aus Weizen)." },
+  { name: "Puffreis", kcal: 382, prot: 7.0, iron: 1.6, fodmap: 0, note: "Low FODMAP. Leichter Snack, gut verträglich." },
+  { name: "Reisflocken", kcal: 368, prot: 6.5, iron: 1.5, fodmap: 0, note: "Low FODMAP. Glutenfreie Frühstücksalternative." },
+  { name: "Hirseflocken", kcal: 355, prot: 9.5, iron: 3.0, fodmap: 0, note: "Low FODMAP. Glutenfrei, gut verträglich." },
+  { name: "Chia-Pudding (Mandelmilch)", kcal: 120, prot: 4.5, iron: 2.8, fodmap: 0, note: "Low FODMAP. Ballaststoffreich, sättigend." },
+  { name: "Overnight Oats (lactosefrei)", kcal: 180, prot: 7.0, iron: 2.0, fodmap: 1, note: "Moderat FODMAP (Hafer). ≤52g Hafer meist verträglich." },
+  { name: "Proteinpulver (Whey)", kcal: 380, prot: 75, iron: 2.0, fodmap: 1, note: "Moderat FODMAP durch Laktose. Isolat besser verträglich." },
+  { name: "Proteinpulver (Erbse)", kcal: 370, prot: 80, iron: 8.0, fodmap: 0, note: "Low FODMAP. Gut verträgliche, pflanzliche Proteinquelle." },
+  { name: "Proteinpulver (Reis)", kcal: 365, prot: 78, iron: 4.0, fodmap: 0, note: "Low FODMAP. Sehr gut verträglich." },
+  { name: "Proteinriegel (Schokolade)", kcal: 360, prot: 30, iron: 3.5, fodmap: 1, note: "Moderat FODMAP je nach Zutaten. Auf Zuckerersatz achten." },
+  { name: "Amaranthpops", kcal: 370, prot: 14, iron: 9.0, fodmap: 0, note: "Low FODMAP. Außergewöhnlich eisenreich, nussiger Geschmack." },
+
+  // ── BROT & BACKWAREN ──
+  { name: "Toastbrot (Weizen)", kcal: 265, prot: 8.5, iron: 2.5, fodmap: 2, note: "Hoch FODMAP (Fructane). Glutenfreie Alternative wählen." },
+  { name: "Toastbrot (glutenfrei)", kcal: 255, prot: 4.5, iron: 1.2, fodmap: 0, note: "Low FODMAP. Gute Brot-Alternative für Reizdarm." },
+  { name: "Bagel (glutenfrei)", kcal: 260, prot: 5.0, iron: 1.5, fodmap: 0, note: "Low FODMAP. Auf Zutaten achten." },
+  { name: "Weizenbrötchen", kcal: 270, prot: 9.0, iron: 2.0, fodmap: 2, note: "Hoch FODMAP (Fructane aus Weizen)." },
+  { name: "Croissant", kcal: 406, prot: 8.5, iron: 2.0, fodmap: 2, note: "Hoch FODMAP (Weizenmehl, oft auch Laktose)." },
+  { name: "Laugenbrezel", kcal: 290, prot: 9.0, iron: 2.8, fodmap: 2, note: "Hoch FODMAP (Weizenmehl-Fructane)." },
+  { name: "Reisbrot (glutenfrei)", kcal: 240, prot: 4.0, iron: 0.8, fodmap: 0, note: "Low FODMAP. Beste Brot-Alternative bei Reizdarm." },
+  { name: "Maisbrot", kcal: 220, prot: 5.5, iron: 1.8, fodmap: 0, note: "Low FODMAP. Glutenfrei, leicht süßlicher Geschmack." },
+  { name: "Buchweizen-Pfannkuchen", kcal: 180, prot: 6.0, iron: 1.5, fodmap: 0, note: "Low FODMAP. Glutenfrei und nährstoffreich." },
+
+  // ── FLEISCH & WURSTWAREN ──
+  { name: "Hähnchenbrust (roh)", kcal: 110, prot: 23, iron: 0.7, fodmap: 0, note: "Low FODMAP. Mager, ideal vor dem Kochen abwiegen." },
+  { name: "Hähnchenschenkel (gekocht)", kcal: 195, prot: 27, iron: 1.3, fodmap: 0, note: "Low FODMAP. Saftiger als Brust, mehr Eisen." },
+  { name: "Hähnchenflügel (gebacken)", kcal: 266, prot: 27, iron: 1.1, fodmap: 0, note: "Low FODMAP. Ohne Marinade mit Knoblauch/Zwiebel." },
+  { name: "Putenwurst (natur)", kcal: 165, prot: 19, iron: 1.2, fodmap: 0, note: "Low FODMAP pur. Auf Zusätze (Zwiebelpulver) achten." },
+  { name: "Salami", kcal: 425, prot: 22, iron: 1.8, fodmap: 0, note: "Low FODMAP pur. Meist ohne FODMAP-Zusätze." },
+  { name: "Hühnerleber", kcal: 167, prot: 24, iron: 9.0, fodmap: 0, note: "Low FODMAP. Ausgezeichnete Eisenquelle – bester Wert unter Fleisch." },
+  { name: "Rinderleber", kcal: 175, prot: 26, iron: 6.5, fodmap: 0, note: "Low FODMAP. Sehr eisenreich, einmal pro Woche empfohlen." },
+  { name: "Kalbsleber", kcal: 160, prot: 24, iron: 6.0, fodmap: 0, note: "Low FODMAP. Milder Geschmack, sehr eisenreich." },
+  { name: "Leberwurst", kcal: 326, prot: 14, iron: 5.0, fodmap: 0, note: "Low FODMAP pur. Auf Zusätze (Zwiebeln) achten." },
+  { name: "Corned Beef (Dose)", kcal: 250, prot: 26, iron: 3.2, fodmap: 0, note: "Low FODMAP. Eisenreich, praktischer Proteinlieferant." },
+  { name: "Thunfisch (Dose, in Öl)", kcal: 198, prot: 29, iron: 1.6, fodmap: 0, note: "Low FODMAP. Kalorienreicher als in Wasser." },
+
+  // ── FISCH & MEERESFRÜCHTE ──
+  { name: "Lachsfilet (roh)", kcal: 179, prot: 20, iron: 0.4, fodmap: 0, note: "Low FODMAP. Reich an Omega-3, gut verträglich." },
+  { name: "Geräucherter Lachs", kcal: 117, prot: 18, iron: 0.9, fodmap: 0, note: "Low FODMAP. Omega-3-reich, als Belag geeignet." },
+  { name: "Heilbutt (gedämpft)", kcal: 110, prot: 23, iron: 0.7, fodmap: 0, note: "Low FODMAP. Sehr magerer, milder Fisch." },
+  { name: "Seelachs (Pollack, gedünstet)", kcal: 92, prot: 20, iron: 0.6, fodmap: 0, note: "Low FODMAP. Günstig und gut verträglich." },
+  { name: "Pangasius (gedünstet)", kcal: 83, prot: 15, iron: 0.6, fodmap: 0, note: "Low FODMAP. Sehr mild, gut für Einsteiger." },
+  { name: "Krabben / Nordseekrabben", kcal: 82, prot: 17, iron: 0.8, fodmap: 0, note: "Low FODMAP. Proteinreich, kaum Fett." },
+  { name: "Jakobsmuscheln", kcal: 88, prot: 17, iron: 0.4, fodmap: 0, note: "Low FODMAP. Sehr fettarm, zartes Eiweiß." },
+  { name: "Austern", kcal: 68, prot: 7.0, iron: 5.6, fodmap: 0, note: "Low FODMAP. Eisenreich, Zinkbombe." },
+  { name: "Räucherforelle", kcal: 162, prot: 22, iron: 0.6, fodmap: 0, note: "Low FODMAP. Aromatisch, omega-3-reich." },
+
+  // ── GEMÜSE (NEU) ──
+  { name: "Pastinake (gekocht)", kcal: 65, prot: 1.3, iron: 0.5, fodmap: 0, note: "Low FODMAP. Süßlich, gut verträglich." },
+  { name: "Steckrübe (gekocht)", kcal: 36, prot: 1.1, iron: 0.4, fodmap: 0, note: "Low FODMAP. Mild, winterliches Gemüse." },
+  { name: "Schwarzwurzel (gekocht)", kcal: 82, prot: 3.3, iron: 3.3, fodmap: 2, note: "Hoch FODMAP (Inulin). Oft schlecht verträglich." },
+  { name: "Topinambur", kcal: 76, prot: 2.0, iron: 3.4, fodmap: 2, note: "Hoch FODMAP (Inulin). Einer der stärksten FODMAP-Lieferanten." },
+  { name: "Zuckerschoten", kcal: 42, prot: 2.8, iron: 2.1, fodmap: 1, note: "Moderat FODMAP (GOS). ≤5 Stück meist ok." },
+  { name: "Grüne Bohnen (gekocht)", kcal: 35, prot: 1.9, iron: 1.0, fodmap: 0, note: "Low FODMAP bis 15 Stück. Gut verträglich." },
+  { name: "Blattspinat (TK)", kcal: 22, prot: 2.7, iron: 3.5, fodmap: 0, note: "Low FODMAP. Gute Eisenquelle, praktisch." },
+  { name: "Erbsen (TK)", kcal: 77, prot: 5.0, iron: 1.5, fodmap: 1, note: "Moderat FODMAP (GOS). ≤3 EL meist ok." },
+  { name: "Mais (TK, gekocht)", kcal: 90, prot: 3.2, iron: 0.4, fodmap: 0, note: "Low FODMAP bis ½ Tasse. Gut verträglich." },
+  { name: "Rote Paprika (gebraten)", kcal: 38, prot: 1.2, iron: 0.6, fodmap: 0, note: "Low FODMAP. Süßer durch Rösten, sehr verträglich." },
+  { name: "Gelbe Paprika", kcal: 27, prot: 1.0, iron: 0.4, fodmap: 0, note: "Low FODMAP. Mild und süßlich." },
+  { name: "Grüne Paprika", kcal: 20, prot: 0.9, iron: 0.4, fodmap: 0, note: "Low FODMAP. Etwas herber als rote Paprika." },
+  { name: "Brokkolisprossen", kcal: 35, prot: 2.8, iron: 0.8, fodmap: 0, note: "Low FODMAP. Sehr nährstoffdicht, gut verträglich." },
+  { name: "Erbsensprossen", kcal: 42, prot: 3.5, iron: 1.8, fodmap: 0, note: "Low FODMAP. Ballaststoffreich, gut verträglich." },
+  { name: "Mungbohnensprossen", kcal: 30, prot: 3.0, iron: 0.9, fodmap: 0, note: "Low FODMAP. Sehr gut verträglich, knackig." },
+  { name: "Thymian (frisch)", kcal: 101, prot: 5.6, iron: 17.5, fodmap: 0, note: "Low FODMAP. Als Würzkraut extremer Eisengehalt." },
+  { name: "Rosmarin (frisch)", kcal: 131, prot: 3.3, iron: 6.7, fodmap: 0, note: "Low FODMAP. Würzig, gut verträglich." },
+  { name: "Oregano (getrocknet)", kcal: 265, prot: 9.0, iron: 36.8, fodmap: 0, note: "Low FODMAP. Als Gewürz: extrem eisenreich." },
+  { name: "Koriander (frisch)", kcal: 23, prot: 2.1, iron: 1.8, fodmap: 0, note: "Low FODMAP. Frisch, aromatisch, gut verträglich." },
+  { name: "Dill (frisch)", kcal: 43, prot: 3.5, iron: 6.6, fodmap: 0, note: "Low FODMAP. Eisenreiche Kräuteralternative." },
+  { name: "Minze (frisch)", kcal: 70, prot: 3.8, iron: 5.1, fodmap: 0, note: "Low FODMAP. Beruhigend, gut für Reizdarm-Beschwerden." },
+
+  // ── OBST (NEU) ──
+  { name: "Physalis", kcal: 53, prot: 1.9, iron: 1.0, fodmap: 0, note: "Low FODMAP. Vitamin C-reich, gut verträglich." },
+  { name: "Feige (frisch)", kcal: 74, prot: 0.8, iron: 0.4, fodmap: 2, note: "Hoch FODMAP (Fructose, Sorbitol). Besser nur in kleinen Mengen." },
+  { name: "Pflaume (frisch)", kcal: 46, prot: 0.7, iron: 0.2, fodmap: 2, note: "Hoch FODMAP (Sorbitol). Kann laxierend wirken." },
+  { name: "Aprikose (frisch)", kcal: 48, prot: 1.4, iron: 0.5, fodmap: 1, note: "Moderat FODMAP (Sorbitol). 1–2 Stück meist ok." },
+  { name: "Mirabelle", kcal: 53, prot: 0.8, iron: 0.4, fodmap: 2, note: "Hoch FODMAP (Sorbitol, Fructose)." },
+  { name: "Drachenfrucht (Pitaya)", kcal: 60, prot: 1.2, iron: 0.7, fodmap: 0, note: "Low FODMAP. Mild, exotisch, gut verträglich." },
+  { name: "Papaya (reif)", kcal: 43, prot: 0.5, iron: 0.3, fodmap: 0, note: "Low FODMAP. Enthält Papain, verdauungsfördernd." },
+  { name: "Kokosnussfleisch (frisch)", kcal: 354, prot: 3.3, iron: 2.4, fodmap: 0, note: "Low FODMAP bis 40g. Reich an MCT-Fetten." },
+  { name: "Zitronensaft", kcal: 22, prot: 0.4, iron: 0.1, fodmap: 0, note: "Low FODMAP. Als Würzmittel ideal, hemmt Eisenabsorptions-Hemmung." },
+  { name: "Limettensaft", kcal: 25, prot: 0.4, iron: 0.2, fodmap: 0, note: "Low FODMAP. Gut als Würzmittel oder Getränk." },
+
+  // ── MILCHPRODUKTE (NEU) ──
+  { name: "Hüttenkäse (Cottage Cheese)", kcal: 98, prot: 11, iron: 0.1, fodmap: 1, note: "Moderat FODMAP (Laktose). Kleine Portionen meist ok." },
+  { name: "Kefir (3,5%)", kcal: 65, prot: 3.3, iron: 0.1, fodmap: 2, note: "Hoch FODMAP durch Laktose. Laktosefrei-Version wählen." },
+  { name: "Kefir (laktosefrei)", kcal: 65, prot: 3.3, iron: 0.1, fodmap: 0, note: "Low FODMAP. Probiotisch und gut verträglich." },
+  { name: "Buttermilch", kcal: 37, prot: 3.4, iron: 0.1, fodmap: 2, note: "Hoch FODMAP (Laktose). Oft schlecht verträglich." },
+  { name: "Crème fraîche", kcal: 292, prot: 2.5, iron: 0.1, fodmap: 1, note: "Moderat FODMAP. Kleine Mengen meist ok." },
+  { name: "Mascarpone", kcal: 429, prot: 4.5, iron: 0.1, fodmap: 1, note: "Moderat FODMAP (Laktose). Kleine Mengen ok." },
+  { name: "Burrata", kcal: 300, prot: 16, iron: 0.2, fodmap: 1, note: "Moderat FODMAP. Frischkäsekern enthält mehr Laktose." },
+  { name: "Halloumi (gegrillt)", kcal: 321, prot: 24, iron: 0.5, fodmap: 0, note: "Low FODMAP. Reifer Käse, wenig Laktose." },
+  { name: "Emmentaler", kcal: 382, prot: 29, iron: 0.3, fodmap: 0, note: "Low FODMAP. Gereifter Hartkäse, laktosefrei." },
+  { name: "Bergkäse (gereift)", kcal: 390, prot: 28, iron: 0.5, fodmap: 0, note: "Low FODMAP. Aromatisch, laktosefrei durch Reifung." },
+  { name: "Brie", kcal: 334, prot: 21, iron: 0.5, fodmap: 1, note: "Moderat FODMAP. Weniger gereift, etwas Laktose." },
+  { name: "Gruyère", kcal: 413, prot: 30, iron: 0.4, fodmap: 0, note: "Low FODMAP. Sehr gereifter Käse, laktosefrei." },
+  { name: "Manchego", kcal: 395, prot: 25, iron: 0.4, fodmap: 0, note: "Low FODMAP. Spanischer Schafskäse, gut verträglich." },
+  { name: "Provolone", kcal: 352, prot: 26, iron: 0.4, fodmap: 0, note: "Low FODMAP. Gereifter Käse, laktosearm." },
+
+  // ── NÜSSE, SAMEN & AUFSTRICHE ──
+  { name: "Kürbiskernmus", kcal: 560, prot: 28, iron: 8.5, fodmap: 0, note: "Low FODMAP. Sehr eisenreich, nussig." },
+  { name: "Tahin (helles Sesammus)", kcal: 570, prot: 18, iron: 8.5, fodmap: 0, note: "Low FODMAP. Cremig, eisenreich." },
+  { name: "Mandelmus (natur)", kcal: 614, prot: 21, iron: 3.7, fodmap: 1, note: "Moderat FODMAP ab größeren Mengen. 1–2 EL meist ok." },
+  { name: "Kokosraspeln", kcal: 660, prot: 7.0, iron: 3.3, fodmap: 0, note: "Low FODMAP bis 30g. Gut als Topping." },
+  { name: "Hanfprotein (Pulver)", kcal: 370, prot: 50, iron: 8.0, fodmap: 0, note: "Low FODMAP. Vollständiges Protein, sehr eisenreich." },
+  { name: "Flohsamenschalen", kcal: 200, prot: 2.0, iron: 5.0, fodmap: 0, note: "Low FODMAP. Hervorragend für Darmregulation." },
+  { name: "Spirulina (Pulver)", kcal: 290, prot: 57, iron: 28.5, fodmap: 0, note: "Low FODMAP. Extrem eisenreich. 1 TL als Supplement." },
+  { name: "Kakaonikbs", kcal: 480, prot: 14, iron: 7.5, fodmap: 1, note: "Moderat FODMAP. Reich an Eisen, bitterer Geschmack." },
+
+  // ── HÜLSENFRÜCHTE ──
+  { name: "Rote Linsen (gekocht)", kcal: 116, prot: 9.0, iron: 3.3, fodmap: 2, note: "Hoch FODMAP (GOS, Fructane). Gut abspülen, Einweichen hilft." },
+  { name: "Beluga-Linsen (gekocht)", kcal: 116, prot: 9.0, iron: 3.3, fodmap: 2, note: "Hoch FODMAP. Wie alle Linsen bei Reizdarm vorsichtig." },
+  { name: "Hummus (hausgemacht)", kcal: 177, prot: 8.0, iron: 2.4, fodmap: 2, note: "Hoch FODMAP (Kichererbsen, Knoblauch). Kleine Mengen testen." },
+  { name: "Weiße Bohnen (Dose, abgespült)", kcal: 130, prot: 8.5, iron: 2.3, fodmap: 2, note: "Hoch FODMAP. Gut abspülen reduziert FODMAP etwas." },
+  { name: "Kidney-Bohnen (Dose, abgespült)", kcal: 127, prot: 8.7, iron: 2.0, fodmap: 2, note: "Hoch FODMAP (Oligosaccharide). Portionskontrolle wichtig." },
+
+  // ── NUDELN, GETREIDE & KOHLENHYDRATE ──
+  { name: "Pasta (Weizen, gekocht)", kcal: 158, prot: 5.8, iron: 1.3, fodmap: 2, note: "Hoch FODMAP (Fructane). Glutenfreie Pasta wählen." },
+  { name: "Udon-Nudeln (Weizen, gekocht)", kcal: 132, prot: 3.5, iron: 0.8, fodmap: 2, note: "Hoch FODMAP (Weizenmehl)." },
+  { name: "Glasnudeln (Mungbohnen, gekocht)", kcal: 95, prot: 0.2, iron: 0.3, fodmap: 0, note: "Low FODMAP. Leichte, gut verträgliche Nudelalternative." },
+  { name: "Soba-Nudeln (100% Buchweizen)", kcal: 99, prot: 5.1, iron: 0.7, fodmap: 0, note: "Low FODMAP. Auf '100% Buchweizen' achten, nicht Weizenmix." },
+  { name: "Reisnudeln (breit, gekocht)", kcal: 112, prot: 2.0, iron: 0.2, fodmap: 0, note: "Low FODMAP. Ideal für asiatische Gerichte." },
+  { name: "Couscous (Mais, glutenfrei, gekocht)", kcal: 112, prot: 2.5, iron: 0.5, fodmap: 0, note: "Low FODMAP. Schnell zubereitet, gut verträglich." },
+  { name: "Couscous (Weizen, gekocht)", kcal: 112, prot: 3.8, iron: 0.5, fodmap: 2, note: "Hoch FODMAP (Fructane aus Weizen)." },
+  { name: "Popcorn (natur, ungezuckert)", kcal: 375, prot: 12, iron: 2.7, fodmap: 0, note: "Low FODMAP. Gesunder Snack in Maßen." },
+  { name: "Popcorn (gesalzen)", kcal: 380, prot: 11, iron: 2.6, fodmap: 0, note: "Low FODMAP. Klassischer Kinoschmaus." },
+  { name: "Tortilla-Chips (Mais)", kcal: 483, prot: 7.5, iron: 2.0, fodmap: 0, note: "Low FODMAP. Auf Zwiebelgeschmack-Varianten achten." },
+  { name: "Nachos (Mais, natur)", kcal: 483, prot: 7.5, iron: 1.9, fodmap: 0, note: "Low FODMAP. Ohne FODMAP-Dips." },
+
+  // ── SÜßES & SNACKS ──
+  { name: "Studentenfutter (natur, ohne Cranberries)", kcal: 575, prot: 18, iron: 3.5, fodmap: 0, note: "Low FODMAP. Rosinen und Cranberries weglassen." },
+  { name: "Sesamriegel", kcal: 510, prot: 13, iron: 10.5, fodmap: 0, note: "Low FODMAP. Extrem eisenreich durch Sesam." },
+  { name: "Haferriegel (zuckerfrei)", kcal: 400, prot: 10, iron: 3.2, fodmap: 1, note: "Moderat FODMAP (Hafer). Auf Zutaten achten." },
+  { name: "Energieriegel (Datteln-Nüsse)", kcal: 370, prot: 7.0, iron: 2.5, fodmap: 2, note: "Hoch FODMAP (Datteln = Sorbitol, Fructose)." },
+  { name: "Salzstangen (Weizen)", kcal: 378, prot: 10, iron: 2.5, fodmap: 2, note: "Hoch FODMAP (Fructane aus Weizen)." },
+  { name: "Reisstangen", kcal: 390, prot: 7.5, iron: 1.5, fodmap: 0, note: "Low FODMAP. Gute Alternative zu Salzstangen." },
+  { name: "Sorbet (Zitrone)", kcal: 130, prot: 0.3, iron: 0.2, fodmap: 0, note: "Low FODMAP. Erfrischend, gut verträglich." },
+  { name: "Sorbet (Erdbeere)", kcal: 110, prot: 0.4, iron: 0.3, fodmap: 0, note: "Low FODMAP. Mit echten Erdbeeren." },
+  { name: "Kokoseis", kcal: 220, prot: 2.5, iron: 0.5, fodmap: 0, note: "Low FODMAP (laktosefrei). Gut verträglich." },
+  { name: "Vanilleeis (laktosefrei)", kcal: 200, prot: 3.5, iron: 0.1, fodmap: 0, note: "Low FODMAP. Verträgliche Eisalternative." },
+  { name: "Vanilleeis (konventionell)", kcal: 200, prot: 3.5, iron: 0.1, fodmap: 2, note: "Hoch FODMAP durch Laktose und oft HFCS." },
+
+  // ── GETRÄNKE (NEU) ──
+  { name: "Ingwertee (frisch)", kcal: 2, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Beruhigt den Verdauungstrakt." },
+  { name: "Hibiskustee", kcal: 0, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Fruchtig, reich an Antioxidantien." },
+  { name: "Rooibostee", kcal: 0, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Koffeinfrei, beruhigend." },
+  { name: "Matcha (aufgebrüht)", kcal: 3, prot: 0.3, iron: 0.3, fodmap: 0, note: "Low FODMAP. Koffein + L-Theanin für klare Energie." },
+  { name: "Mandelmilch (gesüßt)", kcal: 30, prot: 0.5, iron: 0.2, fodmap: 0, note: "Low FODMAP. Auf Zutaten achten, kein Karrageen." },
+  { name: "Mineralwasser (still)", kcal: 0, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Ideal mit Mineralien." },
+  { name: "Mineralwasser (Sprudel)", kcal: 0, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Kann Blähungen verstärken, individuell testen." },
+  { name: "Kombucha", kcal: 30, prot: 0.1, iron: 0.1, fodmap: 1, note: "Moderat FODMAP (Fructose je nach Fermentation). Kleine Mengen testen." },
+  { name: "Zitronenwasser", kcal: 5, prot: 0.1, iron: 0.1, fodmap: 0, note: "Low FODMAP. Fördert Eisenaufnahme durch Vitamin C." },
+  { name: "Kefir-Drink (laktosefrei)", kcal: 60, prot: 3.0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Probiotisch, gut für den Darm." },
+  { name: "Molkendrink (Whey)", kcal: 35, prot: 6.0, iron: 0.1, fodmap: 1, note: "Moderat FODMAP (Laktose). Isolat besser verträglich." },
+
+  // ── SAUCEN, WÜRZMITTEL & ÖLE ──
+  { name: "Tomatenmark (konzentriert)", kcal: 78, prot: 3.9, iron: 2.1, fodmap: 1, note: "Moderat FODMAP ab 2 EL (Fructose)." },
+  { name: "Passierte Tomaten", kcal: 32, prot: 1.6, iron: 0.5, fodmap: 0, note: "Low FODMAP bis ½ Tasse (100g)." },
+  { name: "Tomatensauce (ohne Zwiebel/Knoblauch)", kcal: 40, prot: 1.5, iron: 0.6, fodmap: 0, note: "Low FODMAP. Selbst kochen ohne FODMAP-Trigger." },
+  { name: "Tamari (glutenfreie Sojasoße)", kcal: 60, prot: 8.0, iron: 1.5, fodmap: 0, note: "Low FODMAP. Ideale Alternative zu normaler Sojasoße." },
+  { name: "Fischsauce", kcal: 35, prot: 5.0, iron: 1.8, fodmap: 0, note: "Low FODMAP. Umami-Boost ohne FODMAP." },
+  { name: "Balsamico-Essig", kcal: 88, prot: 0.5, iron: 0.7, fodmap: 1, note: "Moderat FODMAP (Fructose) ab größeren Mengen." },
+  { name: "Weißweinessig", kcal: 18, prot: 0, iron: 0, fodmap: 0, note: "Low FODMAP. Zum Würzen gut geeignet." },
+  { name: "Senf (mittelscharf)", kcal: 60, prot: 4.0, iron: 1.6, fodmap: 0, note: "Low FODMAP. Gut als Dressing-Basis." },
+  { name: "Mayonnaise", kcal: 680, prot: 1.0, iron: 0.3, fodmap: 0, note: "Low FODMAP. Klassische Variante ohne Zwiebel/Knoblauch." },
+  { name: "Pesto (ohne Knoblauch)", kcal: 400, prot: 8.0, iron: 2.5, fodmap: 0, note: "Low FODMAP. Selbst gemacht ohne Knoblauch." },
+  { name: "Guacamole (einfach)", kcal: 165, prot: 2.0, iron: 0.6, fodmap: 1, note: "Moderat FODMAP (Avocado-Sorbitol). Kleine Menge ok." },
+  { name: "Reissirup", kcal: 316, prot: 0, iron: 0.1, fodmap: 0, note: "Low FODMAP. Gute Zuckeralternative beim Backen." },
+  { name: "Agavendicksaft", kcal: 310, prot: 0.1, iron: 0.1, fodmap: 2, note: "Hoch FODMAP (Fructose überwiegt Glucose deutlich)." },
+  { name: "Sesamöl (geröstet)", kcal: 884, prot: 0, iron: 0.6, fodmap: 0, note: "Low FODMAP. Intensives Aroma, für asiatische Gerichte." },
+  { name: "Erdnussöl", kcal: 884, prot: 0, iron: 0, fodmap: 0, note: "Low FODMAP. Hitzebeständig, neutraler Geschmack." },
+  { name: "Apfelmus (ungesüßt)", kcal: 48, prot: 0.2, iron: 0.1, fodmap: 2, note: "Hoch FODMAP (Fructose aus Äpfeln). Alternative: Bananenmus." },
+
+  // ── SOJA & ALTERNATIVE PROTEINE ──
+  { name: "Tofu (geräuchert)", kcal: 140, prot: 16, iron: 3.5, fodmap: 0, note: "Low FODMAP. Proteinreich, gut verträglich." },
+  { name: "Tofu (seidig)", kcal: 55, prot: 5.0, iron: 1.5, fodmap: 0, note: "Low FODMAP. Für Smoothies und Desserts geeignet." },
+  { name: "Jackfrucht (Dose, jung, im Wasser)", kcal: 35, prot: 1.5, iron: 0.8, fodmap: 0, note: "Low FODMAP. Guter Fleischersatz, mild im Geschmack." },
+  { name: "Seitan", kcal: 370, prot: 75, iron: 5.2, fodmap: 2, note: "Hoch FODMAP (reines Weizeneiweiß = Fructane)." },
+  { name: "Lupinensamen (gekocht)", kcal: 119, prot: 16, iron: 3.2, fodmap: 2, note: "Hoch FODMAP (GOS). Vorsicht trotz Proteinreichtum." },
+  { name: "Miso-Paste", kcal: 199, prot: 12, iron: 2.5, fodmap: 1, note: "Moderat FODMAP. Kleine Mengen zum Würzen ok." },
+  { name: "Natto", kcal: 212, prot: 18, iron: 8.6, fodmap: 1, note: "Moderat FODMAP. Fermentiert, probiotisch, sehr eisenreich." },
+  { name: "Reispapier (Wraps)", kcal: 334, prot: 4.0, iron: 0.7, fodmap: 0, note: "Low FODMAP. Glutenfreie Alternative zu Weizenwraps." },
+  { name: "Nori (Seetang-Blätter)", kcal: 35, prot: 5.8, iron: 2.0, fodmap: 0, note: "Low FODMAP. Reich an Jod und Mineralien." },
+
+  // ── BACKZUTATEN ──
+  { name: "Reismehl (weiß)", kcal: 366, prot: 5.9, iron: 0.4, fodmap: 0, note: "Low FODMAP. Beste Allzweckmehl-Alternative." },
+  { name: "Buchweizenmehl", kcal: 335, prot: 12, iron: 4.1, fodmap: 0, note: "Low FODMAP. Glutenfrei, nährstoffreich." },
+  { name: "Kokosmehl", kcal: 400, prot: 16, iron: 4.1, fodmap: 0, note: "Low FODMAP. Ballaststoffreich, gut für Backen." },
+  { name: "Tapiokamehl", kcal: 358, prot: 0.2, iron: 0.6, fodmap: 0, note: "Low FODMAP. Gut als Binde- und Verdickungsmittel." },
+  { name: "Pfeilwurzelmehl", kcal: 357, prot: 0.3, iron: 1.3, fodmap: 0, note: "Low FODMAP. Sehr gut verträgliches Bindemittel." },
+  { name: "Kakaobutter", kcal: 884, prot: 0, iron: 0, fodmap: 0, note: "Low FODMAP. Zum Backen und für Schokoladenherstellung." },
+  { name: "Vanilleextrakt (rein)", kcal: 288, prot: 0.1, iron: 0.1, fodmap: 0, note: "Low FODMAP. Aromatisierung, kleine Mengen." },
 ];
+
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 function getGoals() {
@@ -941,6 +1203,7 @@ function addEntry() {
     prot: Math.round(selectedFood.prot * factor * 10) / 10,
     iron: Math.round(selectedFood.iron * factor * 10) / 10,
     fodmap: selectedFood.fodmap,
+    p100: { kcal: selectedFood.kcal, prot: selectedFood.prot, iron: selectedFood.iron },
     time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
   });
   clearSelection();
@@ -1024,6 +1287,9 @@ function renderToday() {
             <span class="kcal">${e.kcal} kcal</span>
             <span style="color:var(--muted);">${e.prot}g · ${e.iron}mg Fe</span>
           </div>
+          <button class="del-btn" onclick="editEntry('${getTodayKey()}', ${e.idx})" title="Bearbeiten" style="color:var(--muted);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           <button class="del-btn" onclick="deleteEntry('${getTodayKey()}', ${e.idx})" title="Löschen">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
@@ -1088,6 +1354,49 @@ function renderWeek() {
     document.getElementById('avgProt').innerHTML = Math.round(totalProt / activeDays * 10) / 10 + '<span class="stat-unit">g</span>';
     document.getElementById('avgIron').innerHTML = Math.round(totalIron / activeDays * 10) / 10 + '<span class="stat-unit">mg</span>';
   }
+}
+
+// ─── EDIT ENTRY ──────────────────────────────────────────────────────────────
+let editState = null;
+function editEntry(dayKey, idx) {
+  const log = getLog();
+  const entry = log[dayKey][idx];
+  editState = { dayKey, idx };
+  document.getElementById('editFoodName').textContent = entry.name;
+  document.getElementById('editMeal').value = entry.meal;
+  document.getElementById('editAmount').value = entry.amount;
+  document.getElementById('editUnit').value = entry.unit;
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  editState = null;
+}
+function saveEdit() {
+  if (!editState) return;
+  const log = getLog();
+  const entry = log[editState.dayKey][editState.idx];
+  const newAmount = parseFloat(document.getElementById('editAmount').value) || entry.amount;
+  const oldAmount = entry.amount;
+  const factor = newAmount / oldAmount;
+  // Recalculate using stored per-100g values if available, else proportionally
+  if (entry.p100) {
+    const f2 = newAmount / 100;
+    entry.kcal = Math.round(entry.p100.kcal * f2);
+    entry.prot = Math.round(entry.p100.prot * f2 * 10) / 10;
+    entry.iron = Math.round(entry.p100.iron * f2 * 10) / 10;
+  } else {
+    entry.kcal = Math.round(entry.kcal * factor);
+    entry.prot = Math.round(entry.prot * factor * 10) / 10;
+    entry.iron = Math.round(entry.iron * factor * 10) / 10;
+  }
+  entry.amount = newAmount;
+  entry.unit   = document.getElementById('editUnit').value;
+  entry.meal   = document.getElementById('editMeal').value;
+  saveLog(log);
+  closeEditModal();
+  renderToday();
+  renderWeek();
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
