@@ -1302,6 +1302,7 @@ function renderToday() {
 
 // ─── WEEK ─────────────────────────────────────────────────────────────────────
 function renderWeek() {
+  const GOALS = getGoals();
   const log = getLog();
   const today = new Date();
   const dow = today.getDay();
