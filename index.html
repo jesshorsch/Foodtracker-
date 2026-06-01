@@ -200,11 +200,27 @@
   .dot-orange { background: var(--warn); }
   .dot-blue { background: var(--blue); }
 
-  /* FODMAP SUMMARY CARD VARIANTS */
-  .fodmap-summary-neutral { background: var(--bg); }
-  .fodmap-summary-good    { background: var(--accent-light); }
-  .fodmap-summary-warn    { background: var(--warn-light); }
-  .fodmap-summary-bad     { background: var(--danger-light); }
+  /* MEAL HEADER ROW */
+  .meal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .meal-totals { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .meal-empty { font-size: 13px; color: var(--muted); padding: 6px 0 2px; }
+  /* DAY SUMMARY */
+  .day-summary-stat { text-align: center; }
+  .day-summary-stat .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+
+  .theme-toggle-btn {
+    background: var(--border-strong);
+    border: none;
+    border-radius: 20px;
+    padding: 6px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    transition: background 0.2s;
+    min-width: 60px;
+  }
+  [data-theme="dark"] .theme-toggle-btn { background: var(--accent); color: #000; }
 
   @media (max-width: 768px) {
     .app { grid-template-columns: 1fr; }
@@ -385,11 +401,23 @@
     </div>
 
     <div class="card card-sm" style="margin-top:0.5rem;">
-      <div style="font-size:13px; color:var(--muted); margin-bottom:0.75rem;">FODMAP-Legende</div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        <span class="badge badge-green">✓ Low FODMAP</span>
-        <span class="badge badge-orange">△ Mäßig</span>
-        <span class="badge badge-red">✕ High FODMAP</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <span style="font-size:13px; color:var(--muted);">Heute</span>
+        <span id="sumFodmap" class="badge"></span>
+      </div>
+      <div style="display:flex; justify-content:space-around;">
+        <div class="day-summary-stat">
+          <div class="stat-label">Kalorien</div>
+          <div style="font-family:'DM Mono',monospace; font-size:16px; font-weight:300;" id="sumKcal">–</div>
+        </div>
+        <div class="day-summary-stat">
+          <div class="stat-label">Protein</div>
+          <div style="font-family:'DM Mono',monospace; font-size:16px; font-weight:300;" id="sumProt">–</div>
+        </div>
+        <div class="day-summary-stat">
+          <div class="stat-label">Eisen</div>
+          <div style="font-family:'DM Mono',monospace; font-size:16px; font-weight:300;" id="sumIron">–</div>
+        </div>
       </div>
     </div>
 
@@ -414,11 +442,6 @@
   <div class="page" id="page-today">
     <h1 id="greeting">Hallo, Jessica</h1>
     <p class="subtitle" id="todayDate"></p>
-
-    <div class="card card-sm fodmap-summary-neutral" id="fodmapSummaryCard" style="margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
-      <span id="fodmapSummaryLabel" style="font-size:13px; color:var(--muted);"></span>
-      <span id="fodmapSummaryBadge" class="badge"></span>
-    </div>
 
     <div class="card" style="margin-bottom:1rem;">
       <div class="stats-grid">
@@ -1210,7 +1233,22 @@ function addEntry() {
   clearSelection();
   renderToday();
   renderWeek();
+  updateDaySummary();
   showPage('today');
+}
+
+// ─── DAY SUMMARY (Hinzufügen-Seite) ──────────────────────────────────────────
+function updateDaySummary() {
+  const entries = getTodayEntries();
+  const t = entries.reduce((a, e) => ({ kcal: a.kcal + e.kcal, prot: a.prot + e.prot, iron: a.iron + e.iron }), { kcal: 0, prot: 0, iron: 0 });
+  document.getElementById('sumKcal').textContent = entries.length ? Math.round(t.kcal) : '–';
+  document.getElementById('sumProt').textContent = entries.length ? Math.round(t.prot * 10) / 10 + 'g' : '–';
+  document.getElementById('sumIron').textContent = entries.length ? Math.round(t.iron * 10) / 10 + 'mg' : '–';
+  const badge = document.getElementById('sumFodmap');
+  if (!entries.length) { badge.textContent = ''; badge.className = 'badge'; return; }
+  const worst = Math.max(...entries.map(e => e.fodmap));
+  badge.textContent = ['Low FODMAP', 'Moderat', 'High FODMAP'][worst];
+  badge.className = ['badge badge-green', 'badge badge-orange', 'badge badge-red'][worst];
 }
 
 // ─── TODAY ────────────────────────────────────────────────────────────────────
@@ -1223,32 +1261,6 @@ function renderToday() {
   const hour = new Date().getHours();
   const greetWord = hour < 11 ? 'Guten Morgen' : hour < 14 ? 'Guten Mittag' : hour < 18 ? 'Guten Nachmittag' : 'Guten Abend';
   document.getElementById('greeting').textContent = greetWord + ', Jessica';
-
-  // FODMAP summary — compact, no emoji text walls
-  const card = document.getElementById('fodmapSummaryCard');
-  if (!entries.length) {
-    card.className = 'card card-sm fodmap-summary-neutral';
-    document.getElementById('fodmapSummaryLabel').textContent = 'Noch keine Mahlzeiten';
-    document.getElementById('fodmapSummaryBadge').textContent = '';
-    document.getElementById('fodmapSummaryBadge').className = 'badge';
-  } else {
-    const highCount = entries.filter(e => e.fodmap === 2).length;
-    const modCount  = entries.filter(e => e.fodmap === 1).length;
-    let cls, badgeCls, badgeText;
-    if (highCount === 0 && modCount === 0) {
-      cls = 'fodmap-summary-good'; badgeCls = 'badge badge-green'; badgeText = 'Low FODMAP';
-    } else if (highCount === 0) {
-      cls = 'fodmap-summary-warn'; badgeCls = 'badge badge-orange'; badgeText = 'Moderat FODMAP';
-    } else if (highCount <= 2) {
-      cls = 'fodmap-summary-warn'; badgeCls = 'badge badge-red'; badgeText = `${highCount}× High FODMAP`;
-    } else {
-      cls = 'fodmap-summary-bad'; badgeCls = 'badge badge-red'; badgeText = `${highCount}× High FODMAP`;
-    }
-    card.className = 'card card-sm fodmap-summary-' + cls.replace('fodmap-summary-','');
-    document.getElementById('fodmapSummaryLabel').textContent = 'Heutige Verträglichkeit';
-    document.getElementById('fodmapSummaryBadge').textContent = badgeText;
-    document.getElementById('fodmapSummaryBadge').className = badgeCls;
-  }
 
   // Water tracker
   const water = getWater();
@@ -1270,15 +1282,19 @@ function renderToday() {
   document.getElementById('ironBar').style.width = Math.min(100, totals.iron / GOALS.iron * 100) + '%';
 
   const log = document.getElementById('todayLog');
-  if (!entries.length) { log.innerHTML = '<div class="empty">Noch keine Einträge heute.</div>'; return; }
+  const dayKey = getTodayKey();
+  const mealMap = {};
+  entries.forEach((e, i) => { if (!mealMap[e.meal]) mealMap[e.meal] = []; mealMap[e.meal].push({ ...e, idx: i }); });
 
-  const meals = {};
-  entries.forEach((e, i) => { if (!meals[e.meal]) meals[e.meal] = []; meals[e.meal].push({ ...e, idx: i }); });
-
-  log.innerHTML = Object.entries(meals).map(([meal, items]) => `
-    <div class="meal-section card">
-      <div class="meal-header">${meal}</div>
-      ${items.map(e => `
+  const MEAL_ORDER = ['Frühstück', 'Mittagessen', 'Abendessen', 'Snack'];
+  log.innerHTML = MEAL_ORDER.map(meal => {
+    const items = mealMap[meal] || [];
+    const mt = items.reduce((a, e) => ({ kcal: a.kcal + e.kcal, prot: a.prot + e.prot, iron: a.iron + e.iron }), { kcal: 0, prot: 0, iron: 0 });
+    const totalsStr = items.length
+      ? `${Math.round(mt.kcal)} kcal · ${Math.round(mt.prot*10)/10}g · ${Math.round(mt.iron*10)/10}mg Fe`
+      : '';
+    const itemsHtml = items.length
+      ? items.map(e => `
         <div class="log-item">
           <div style="flex:1;">
             <div class="log-name">${e.name}</div>
@@ -1288,16 +1304,23 @@ function renderToday() {
             <span class="kcal">${e.kcal} kcal</span>
             <span style="color:var(--muted);">${e.prot}g · ${e.iron}mg Fe</span>
           </div>
-          <button class="del-btn" onclick="editEntry('${getTodayKey()}', ${e.idx})" title="Bearbeiten" style="color:var(--muted);">
+          <button class="del-btn" onclick="editEntry('${dayKey}', ${e.idx})" title="Bearbeiten" style="color:var(--muted);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="del-btn" onclick="deleteEntry('${getTodayKey()}', ${e.idx})" title="Löschen">
+          <button class="del-btn" onclick="deleteEntry('${dayKey}', ${e.idx})" title="Löschen">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
-        </div>
-      `).join('')}
-    </div>
-  `).join('');
+        </div>`).join('')
+      : `<div class="meal-empty">Noch nichts eingetragen</div>`;
+    return `
+    <div class="meal-section card">
+      <div class="meal-header-row">
+        <span class="meal-header">${meal}</span>
+        <span class="meal-totals">${totalsStr}</span>
+      </div>
+      ${itemsHtml}
+    </div>`;
+  }).join('');
 }
 
 // ─── WEEK ─────────────────────────────────────────────────────────────────────
@@ -1493,6 +1516,7 @@ document.addEventListener('click', e => {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 renderToday();
 renderWeek();
+updateDaySummary();
 
 // Service Worker für automatische Updates
 if ('serviceWorker' in navigator) {
