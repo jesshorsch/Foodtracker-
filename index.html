@@ -168,6 +168,16 @@
   .result-item:hover { background: var(--bg); }
   .result-name { font-size: 14px; font-weight: 500; }
   .result-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* PORTION CHIPS */
+  .portion-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .portion-chip {
+    background: var(--bg); border: 1px solid var(--border-strong);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    color: var(--text);
+  }
+  .portion-chip:hover, .portion-chip.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .portion-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
   .search-wrap { position: relative; }
   /* FODMAP */
   .fodmap-banner {
@@ -358,7 +368,7 @@
         <div class="input-row field">
           <div>
             <label>Menge</label>
-            <input type="number" id="amount" value="100" min="1" oninput="updatePreview()">
+            <input type="number" id="amount" value="100" min="1" oninput="onAmountInput()">
           </div>
           <div>
             <label>Einheit</label>
@@ -368,6 +378,10 @@
               <option value="Stk">Stk</option>
             </select>
           </div>
+        </div>
+        <div id="portionChipsWrap" style="display:none;">
+          <div class="portion-chips" id="portionChips"></div>
+          <div class="portion-hint" id="portionHint"></div>
         </div>
 
         <div class="stats-grid" style="margin-bottom:1rem;">
@@ -1223,6 +1237,68 @@ function onSearch(q) {
   box.style.display = 'block';
 }
 
+function getPortions(food) {
+  const n = food.name.toLowerCase();
+  // Eggs
+  if (n.includes('ei (') || n.includes('eier') || n.includes('eigelb') || n.includes('eiweiß')) return [{ label: '1 Ei (M)', size: 55 }, { label: '1 Ei (L)', size: 65 }, { label: '2 Eier', size: 120 }];
+  if (n.includes('omelette')) return [{ label: '1 Portion (2 Eier)', size: 120 }, { label: '1 Portion (3 Eier)', size: 180 }];
+  // Bread & Baked
+  if (n.includes('toast')) return [{ label: '1 Scheibe', size: 25 }, { label: '2 Scheiben', size: 50 }];
+  if (n.includes('brot') || n.includes('baguette') || n.includes('brötchen')) return [{ label: '1 Scheibe', size: 40 }, { label: '1 Brötchen', size: 60 }, { label: '2 Scheiben', size: 80 }];
+  if (n.includes('cracker') || n.includes('reiswaffel') || n.includes('maiswaffel')) return [{ label: '1 Stück', size: 10 }, { label: '3 Stück', size: 30 }, { label: '5 Stück', size: 50 }];
+  // Dairy
+  if (n.includes('joghurt') || n.includes('quark') || n.includes('skyr')) return [{ label: 'kleines Glas', size: 150 }, { label: 'Becher (200g)', size: 200 }, { label: 'Großer Becher', size: 300 }];
+  if (n.includes('milch') && !n.includes('kokosmilch')) return [{ label: '1 Glas (200ml)', size: 200 }, { label: '1 Tasse (250ml)', size: 250 }];
+  if (n.includes('käse') || n.includes('feta') || n.includes('mozzarella')) return [{ label: '1 Scheibe', size: 20 }, { label: '2 Scheiben', size: 40 }, { label: '1 Portion', size: 60 }];
+  if (n.includes('butter') && !n.includes('erd') && !n.includes('kakao')) return [{ label: '1 TL', size: 5 }, { label: '1 EL', size: 15 }];
+  // Fruits
+  if (n.includes('banane')) return [{ label: '½ Banane', size: 60 }, { label: '1 kleine', size: 100 }, { label: '1 große', size: 140 }];
+  if (n.includes('apfel')) return [{ label: '1 kleiner', size: 120 }, { label: '1 mittelgroßer', size: 170 }];
+  if (n.includes('erdbeere') || n.includes('heidelbeere') || n.includes('himbeere') || n.includes('blaubeere')) return [{ label: 'Handvoll (80g)', size: 80 }, { label: '1 Portion', size: 150 }];
+  if (n.includes('avocado')) return [{ label: '¼ Avocado', size: 50 }, { label: '½ Avocado', size: 100 }, { label: '1 ganze', size: 200 }];
+  if (n.includes('zitrone') || n.includes('limette')) return [{ label: '½ Frucht', size: 40 }, { label: '1 Frucht', size: 80 }];
+  if (n.includes('traube') || n.includes('kirsche')) return [{ label: 'Handvoll', size: 80 }, { label: '1 Portion', size: 150 }];
+  // Vegetables
+  if (n.includes('spinat') || n.includes('rucola') || n.includes('salat') || n.includes('mangold') || n.includes('feldsalat')) return [{ label: 'kleine Portion', size: 50 }, { label: '1 Portion', size: 100 }];
+  if (n.includes('tomate') || n.includes('paprika') || n.includes('zucchini') || n.includes('gurke')) return [{ label: '½ Stück', size: 60 }, { label: '1 Stück', size: 120 }];
+  if (n.includes('karotte') || n.includes('möhre')) return [{ label: '1 mittelgroße', size: 80 }, { label: '2 Stück', size: 160 }];
+  // Meat & Fish
+  if (n.includes('hähnchen') || n.includes('hühnchen') || n.includes('pute') || n.includes('turkey')) return [{ label: 'kleines Stück', size: 100 }, { label: '1 Portion', size: 150 }, { label: 'große Portion', size: 200 }];
+  if (n.includes('rind') || n.includes('steak') || n.includes('hackfleisch')) return [{ label: '1 Portion', size: 150 }, { label: 'große Portion', size: 200 }];
+  if (n.includes('lachs') || n.includes('forelle') || n.includes('thunfisch') || n.includes('makrele')) return [{ label: '1 Filet', size: 120 }, { label: 'große Portion', size: 180 }];
+  if (n.includes('sardine') || n.includes('sardellen')) return [{ label: '½ Dose', size: 60 }, { label: '1 Dose', size: 120 }];
+  if (n.includes('wurst') || n.includes('schinken') || n.includes('salami')) return [{ label: '1 Scheibe', size: 20 }, { label: '2 Scheiben', size: 40 }, { label: '3 Scheiben', size: 60 }];
+  // Nuts & Seeds
+  if (n.includes('mandel') || n.includes('nuss') || n.includes('cashew') || n.includes('pistazie') || n.includes('walnuss')) return [{ label: 'kleine Handvoll', size: 20 }, { label: 'Handvoll', size: 30 }];
+  if (n.includes('sesam') || n.includes('leinsamen') || n.includes('chiasamen') || n.includes('sonnenblumen')) return [{ label: '1 TL', size: 5 }, { label: '1 EL', size: 10 }];
+  if (n.includes('erdnussbutter') || n.includes('mandelmus') || n.includes('nussmus')) return [{ label: '1 TL', size: 10 }, { label: '1 EL', size: 20 }, { label: '2 EL', size: 40 }];
+  // Grains & Pasta
+  if (n.includes('haferflocken') || n.includes('müsli') || n.includes('granola')) return [{ label: 'kleine Portion', size: 40 }, { label: '1 Portion', size: 60 }, { label: 'große Portion', size: 80 }];
+  if (n.includes('reis') && !n.includes('waffel') && !n.includes('mehl')) return [{ label: 'kleine Portion (gegart)', size: 150 }, { label: '1 Portion (gegart)', size: 200 }, { label: 'große Portion', size: 250 }];
+  if (n.includes('nudel') || n.includes('pasta') || n.includes('spaghetti')) return [{ label: 'kleine Portion (gegart)', size: 150 }, { label: '1 Portion (gegart)', size: 200 }, { label: 'große Portion', size: 250 }];
+  // Legumes
+  if (n.includes('linsen') || n.includes('bohne') || n.includes('kichererbse') || n.includes('tofu') || n.includes('tempeh')) return [{ label: 'kleine Portion', size: 80 }, { label: '1 Portion', size: 120 }, { label: 'große Portion', size: 180 }];
+  // Drinks
+  if (n.includes('kaffee') || n.includes('espresso') || n.includes('latte') || n.includes('cappuccino') || n.includes('flat white')) return [{ label: '1 Tasse (150ml)', size: 150 }, { label: '1 großer Becher (300ml)', size: 300 }];
+  if (n.includes('tee')) return [{ label: '1 Tasse (200ml)', size: 200 }, { label: '1 großer Becher (300ml)', size: 300 }];
+  if (n.includes('saft') || n.includes('smoothie')) return [{ label: '1 Glas (150ml)', size: 150 }, { label: '1 Glas (200ml)', size: 200 }];
+  if (n.includes('wasser') || n.includes('mineralwasser')) return [{ label: '1 Glas (200ml)', size: 200 }, { label: '1 Flasche (500ml)', size: 500 }];
+  // Ice cream
+  if (n.includes('eis') && (n.includes('vanille') || n.includes('schokolade') || n.includes('erdbeer') || n.includes('sorbet') || n.includes('kokos') || n.includes('hafer') || n.includes('mango'))) return [{ label: '1 Kugel', size: 60 }, { label: '2 Kugeln', size: 120 }, { label: '3 Kugeln', size: 180 }];
+  if (n.includes('eis am stiel')) return [{ label: '1 Stiel', size: 60 }];
+  // Sauces
+  if (n.includes('sauce') || n.includes('soße') || n.includes('dressing') || n.includes('mayo') || n.includes('senf') || n.includes('pesto') || n.includes('chimichurri') || n.includes('tartarsauce')) return [{ label: '1 TL', size: 5 }, { label: '1 EL', size: 15 }, { label: '2 EL', size: 30 }];
+  if (n.includes('sojasauce') || n.includes('fischsauce') || n.includes('tamari')) return [{ label: '1 TL', size: 5 }, { label: '1 EL', size: 15 }];
+  // Chocolate & Sweets
+  if (n.includes('schokolade')) return [{ label: '1 Riegel', size: 20 }, { label: '¼ Tafel', size: 25 }, { label: '½ Tafel', size: 50 }];
+  if (n.includes('honig') || n.includes('ahornsirup') || n.includes('agavensirup')) return [{ label: '1 TL', size: 7 }, { label: '1 EL', size: 20 }];
+  // Oils
+  if (n.includes('öl')) return [{ label: '1 TL', size: 5 }, { label: '1 EL', size: 10 }, { label: '2 EL', size: 20 }];
+  // Herbs & Spices
+  if (n.includes('petersilie') || n.includes('basilikum') || n.includes('dill') || n.includes('schnittlauch') || n.includes('thymian') || n.includes('koriander')) return [{ label: '1 TL', size: 2 }, { label: '1 EL', size: 5 }, { label: 'Handvoll frisch', size: 10 }];
+  return [];
+}
+
 function selectFood(idx) {
   selectedFood = FOODS[idx];
   document.getElementById('foodSearch').value = selectedFood.name;
@@ -1232,6 +1308,35 @@ function selectFood(idx) {
   badge.className = 'badge ' + ['badge-green','badge-orange','badge-red'][selectedFood.fodmap];
   badge.textContent = ['Low FODMAP','Moderat FODMAP','High FODMAP'][selectedFood.fodmap];
   document.getElementById('selectedFoodName').textContent = selectedFood.name;
+  renderPortionChips();
+  updatePreview();
+}
+
+function renderPortionChips() {
+  const portions = getPortions(selectedFood);
+  const wrap = document.getElementById('portionChipsWrap');
+  const chips = document.getElementById('portionChips');
+  const hint = document.getElementById('portionHint');
+  if (!portions.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const currentAmount = parseFloat(document.getElementById('amount').value) || 0;
+  chips.innerHTML = portions.map(p =>
+    `<button class="portion-chip${p.size === currentAmount ? ' active' : ''}" onclick="setPortionAmount(${p.size})">${p.label} (${p.size}g)</button>`
+  ).join('');
+  hint.textContent = 'Alle Nährwerte per 100g — Chip wählen oder Menge manuell eingeben';
+}
+
+function setPortionAmount(size) {
+  document.getElementById('amount').value = size;
+  document.querySelectorAll('.portion-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  updatePreview();
+}
+
+function onAmountInput() {
+  if (selectedFood) {
+    document.querySelectorAll('.portion-chip').forEach(c => c.classList.remove('active'));
+  }
   updatePreview();
 }
 
